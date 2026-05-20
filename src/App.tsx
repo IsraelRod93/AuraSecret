@@ -165,9 +165,8 @@ const App: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Escribe aquí..."
-          disabled={showMatch}
         />
-        <button type="submit" style={styles.sendBtn} disabled={loading || showMatch}>
+        <button type="submit" style={styles.sendBtn} disabled={loading}>
           {loading ? '...' : '✦'}
         </button>
       </form>
