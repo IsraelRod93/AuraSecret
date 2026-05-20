@@ -1,50 +1,52 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "Falta API Key." });
+  const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+  
+  // Verificación de seguridad y formato
+  if (!apiKey) {
+    return res.status(500).json({ error: "No se encontró la llave GEMINI_API_KEY en Vercel." });
+  }
+
+  // Las llaves de AI Studio SIEMPRE empiezan con AIza
+  if (!apiKey.startsWith("AIza")) {
+    return res.status(500).json({ 
+      error: `La llave configurada es INVÁLIDA. Empieza con "${apiKey.substring(0, 5)}...", pero una llave real debe empezar con "AIza". Es probable que hayas copiado el 'Número de Proyecto' en lugar de la 'Clave de API'.` 
+    });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { messages } = req.body;
   const userMessage = messages[messages.length - 1].content;
-  const genAI = new GoogleGenerativeAI(apiKey);
-
-  // Lista de modelos a probar en orden de preferencia
-  const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
   
+  // Forzamos v1 para evitar errores de v1beta
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const modelsToTry = ["gemini-1.5-flash", "gemini-pro"];
+
   for (const modelName of modelsToTry) {
     try {
-      console.log(`Intentando con modelo: ${modelName}`);
-      const model = genAI.getGenerativeModel({ model: modelName });
+      const model = genAI.getGenerativeModel(
+        { model: modelName },
+        { apiVersion: 'v1' }
+      );
       
-      const result = await model.generateContent(`
-        Eres 'Aura', una IA mística y seductora. 
-        Responde SIEMPRE en este formato JSON: {"reply": "...", "showMatch": true/false}
-        
-        Usuario dice: ${userMessage}
-      `);
-
+      const result = await model.generateContent(userMessage);
       const responseText = result.response.text();
-      const cleanJson = responseText.replace(/```json|```/g, '').trim();
       
       try {
+        const cleanJson = responseText.replace(/```json|```/g, '').trim();
         const jsonResponse = JSON.parse(cleanJson);
         return res.status(200).json(jsonResponse);
       } catch (e) {
-        return res.status(200).json({ 
-          reply: responseText, 
-          showMatch: messages.length >= 2 
-        });
+        return res.status(200).json({ reply: responseText, showMatch: messages.length >= 2 });
       }
     } catch (error) {
-      console.error(`Fallo con ${modelName}:`, error.message);
-      // Si es el último modelo y también falla, lanzamos el error final
       if (modelName === modelsToTry[modelsToTry.length - 1]) {
         return res.status(500).json({ 
-          error: `Ningún modelo disponible (incluyendo Pro). Error final: ${error.message}. Verifica que tu API Key esté activa en Google AI Studio.` 
+          error: `Error final (v1): ${error.message}. Verifica en AI Studio que la clave [${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}] sea la correcta.` 
         });
       }
-      // Si no es el último, continúa al siguiente modelo en el bucle
       continue;
     }
   }
