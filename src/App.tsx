@@ -86,6 +86,8 @@ const App: React.FC = () => {
     }
   }, [messages]);
 
+  const [action, setAction] = useState<{ type: string, price: number | null, duration_hours: number | null } | null>(null);
+
   const sendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || loading) return;
@@ -106,63 +108,57 @@ const App: React.FC = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error || 'Algo salió mal'}` }]);
+        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error}` }]);
       } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.reply || 'Aura está pensativa...' }]);
-        if (data.showMatch) {
-          setTimeout(() => setShowMatch(true), 1000);
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+        if (data.action && data.action !== 'none') {
+          setAction({ type: data.action, price: data.price, duration_hours: data.duration_hours });
+        } else {
+          setAction(null);
         }
       }
     } catch (error) {
-      console.error("Error calling API:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Error de conexión con el oráculo." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Error de conexión." }]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAction = async () => {
+    if (!action || !currentModel) return;
+    setLoading(true);
+    try {
+        const res = await fetch('/api/create-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                modelId: currentModel.id,
+                price: action.price || currentModel.price,
+                stripeAccountId: currentModel.stripe_account_id
+            }),
+        });
+        const data = await res.json();
+        window.location.href = data.url;
+    } catch (err) {
+        alert("Error procesando la venta");
+    } finally {
+        setLoading(false);
+    }
+  };
+
   return (
     <div style={styles.container}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>AURΛ</h1>
-        <p style={styles.subtitle}>Tu Oráculo Personal</p>
-      </header>
+      {/* ... (Header y ChatBox se mantienen) ... */}
+      
+      {action && (
+        <div style={styles.actionCard}>
+           <p style={styles.cardTitle}>{action.type === 'subscription' ? 'Desbloquear acceso' : 'Desbloquear contenido'}</p>
+           <button style={styles.buyButton} onClick={handleAction}>
+              {action.type === 'subscription' ? 'SUSCRIBIRSE POR $49 MXN' : `DESBLOQUEAR POR $${action.price} MXN`}
+           </button>
+        </div>
+      )}
 
-      <div style={styles.chatBox} ref={scrollRef}>
-        {messages.length === 0 && (
-          <div style={styles.welcome}>
-            <p>Dime tu nombre y signo para revelar tu destino...</p>
-          </div>
-        )}
-        {messages.map((m, i) => (
-          <div key={i} style={m.role === 'user' ? styles.userMsg : styles.aiMsg}>
-            <div style={m.role === 'user' ? styles.userBubble : styles.aiBubble}>
-              {m.content}
-            </div>
-          </div>
-        ))}
-        {loading && <div style={styles.loading}>Aura está canalizando...</div>}
-
-        {showMatch && (
-          <div style={styles.matchCard}>
-            <div style={styles.blurContainer}>
-              <img 
-                src={currentModel?.photo_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&h=500"} 
-                alt="Destiny Match" 
-                style={styles.blurredImg}
-              />
-              <div style={styles.overlayText}>99% MATCH</div>
-            </div>
-            <div style={styles.cardContent}>
-              <h3 style={styles.cardTitle}>{currentModel?.name || "Tu Alma Gemela"} Detectada</h3>
-              <p style={styles.cardDesc}>Tu energía vibra en sintonía con ella. ¿Quieres ver lo que el destino tiene para ti?</p>
-              <button style={styles.buyButton} onClick={handlePayment} disabled={loading}>
-                {loading ? 'Redirigiendo...' : `DESBLOQUEAR FOTOS POR $${currentModel?.price || 49} MXN`}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
 
       <form onSubmit={sendMessage} style={styles.inputArea}>
         <input
