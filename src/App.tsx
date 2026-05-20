@@ -57,34 +57,6 @@ const App: React.FC = () => {
     fetchModel();
   }, []);
 
-  const handlePayment = async () => {
-    if (!currentModel) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          modelId: currentModel.id,
-          price: currentModel.price,
-          stripeAccountId: currentModel.stripe_account_id
-        }),
-      });
-      const data = await res.json();
-      window.location.href = data.url;
-    } catch (err) {
-      alert("Error al procesar el pago");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
   const [action, setAction] = useState<{ type: string, price: number | null, duration_hours: number | null } | null>(null);
 
   const sendMessage = async (e?: React.FormEvent) => {
