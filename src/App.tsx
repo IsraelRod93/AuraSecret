@@ -36,12 +36,18 @@ const App: React.FC = () => {
       });
 
       const data = await response.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-      if (data.showMatch) {
-        setTimeout(() => setShowMatch(true), 1000);
+      
+      if (!response.ok) {
+        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error || 'Algo salió mal'}` }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply || 'Aura está pensativa...' }]);
+        if (data.showMatch) {
+          setTimeout(() => setShowMatch(true), 1000);
+        }
       }
     } catch (error) {
       console.error("Error calling API:", error);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Error de conexión con el oráculo." }]);
     } finally {
       setLoading(false);
     }
