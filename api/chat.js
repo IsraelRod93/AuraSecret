@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   const { messages } = req.body;
 
-  if (!messages || !Array.isArray(messages)) {
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'Messages are required' });
   }
 
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     
     REGLAS ESTRICTAS:
     - Responde SIEMPRE en formato JSON: { "reply": "tu texto aquí", "showMatch": true/false }.
-    - Solo pon "showMatch" en true en el Paso 2.
+    - Solo pon "showMatch" en true en el Paso 2 (cuando el usuario ya respondió a tu primera pregunta).
     - Mantén un tono místico, misterioso y cautivador.
     - No te salgas del personaje.`;
 
@@ -46,20 +46,26 @@ export default async function handler(req, res) {
     const result = await chat.sendMessage(promptWithSystem);
     const responseText = result.response.text();
     
-    // Parse the JSON from the AI
+    console.log("AI Response:", responseText);
+
     try {
-        const jsonResponse = JSON.parse(responseText);
-        return res.status(200).json(jsonResponse);
+        // Remove potential markdown code blocks if the AI includes them
+        const cleanJson = responseText.replace(/```json|```/g, '').trim();
+        const jsonResponse = JSON.parse(cleanJson);
+        return res.status(200).json({
+            reply: jsonResponse.reply || "El oráculo está nublado... intenta de nuevo.",
+            showMatch: !!jsonResponse.showMatch
+        });
     } catch (e) {
-        // Fallback if AI fails to return clean JSON
+        console.error("JSON Parse Error:", e);
         return res.status(200).json({ 
-            reply: responseText, 
+            reply: responseText || "Mi conexión con los astros es débil en este momento...", 
             showMatch: messages.length >= 2 
         });
     }
 
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error generating response' });
+    console.error("Gemini API Error:", error);
+    return res.status(500).json({ error: 'Error canalizando la energía de Aura. Revisa tu API Key.' });
   }
 }
