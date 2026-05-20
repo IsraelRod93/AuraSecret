@@ -29,7 +29,6 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showMatch, setShowMatch] = useState(false);
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
