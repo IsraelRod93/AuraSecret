@@ -36,7 +36,7 @@ const App: React.FC = () => {
   // Cargar una modelo aleatoria al inicio
   useEffect(() => {
     const fetchModel = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('models')
         .select('*')
         .not('stripe_account_id', 'is', null)
