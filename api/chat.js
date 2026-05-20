@@ -15,12 +15,14 @@ export default async function handler(req, res) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Usamos el modelo flash en su versión estable
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // FORZAMOS LA VERSIÓN v1 DE LA API (la estable)
+    const model = genAI.getGenerativeModel(
+      { model: "gemini-1.5-flash" },
+      { apiVersion: 'v1' }
+    );
 
-    const systemPrompt = `Eres 'Aura', una IA mística y seductora. 
-    Responde SIEMPRE en formato JSON: { "reply": "...", "showMatch": true/false }.
-    Regla: showMatch es true solo en la segunda respuesta del asistente.`;
+    const systemPrompt = `Eres 'Aura', una IA mística. Responde en JSON: { "reply": "...", "showMatch": true/false }.`;
 
     const chat = model.startChat({
       history: (messages || []).slice(0, -1).map(m => ({
@@ -49,9 +51,9 @@ export default async function handler(req, res) {
     }
 
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Detailed Gemini Error:", error);
     return res.status(500).json({ 
-      error: `Error de Aura: ${error.message}. Verifica que tu API Key sea de 'Google AI Studio'.` 
+      error: `Error de Aura (v1): ${error.message}.` 
     });
   }
 }
