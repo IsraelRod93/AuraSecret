@@ -51,17 +51,33 @@ export function AuraChat() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate oracle response
-    setTimeout(() => {
-      const response = ORACLE_RESPONSES[Math.floor(Math.random() * ORACLE_RESPONSES.length)];
+    // Call our actual API
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [...messages, userMessage].map(m => ({ 
+            role: m.role === 'user' ? 'user' : 'model', 
+            content: m.content 
+          })) 
+        }),
+      });
+
+      const data = await response.json();
+      
       const oracleMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "oracle",
-        content: response,
+        content: data.reply || "El oráculo está meditando...",
       };
+      
       setMessages((prev) => [...prev, oracleMessage]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { id: Date.now().toString(), role: "oracle", content: "Error de conexión." }]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
