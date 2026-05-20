@@ -39,11 +39,20 @@ const App: React.FC = () => {
       const { data, error } = await supabase
         .from('models')
         .select('*')
-        .not('stripe_account_id', 'is', null) // Solo modelos con banco vinculado
+        .not('stripe_account_id', 'is', null)
         .limit(1);
       
       if (data && data.length > 0) {
         setCurrentModel(data[0]);
+      } else {
+        // FALLBACK: Modelos semilla de IA para empezar a cobrar YA
+        setCurrentModel({
+          id: 'seed-1',
+          name: 'Ariadna de Creta',
+          price: 49,
+          photo_url: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=400&h=500',
+          stripe_account_id: 'primary' // Esto indicará al backend que use tu cuenta principal
+        });
       }
     };
     fetchModel();

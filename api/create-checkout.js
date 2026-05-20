@@ -8,10 +8,8 @@ export default async function handler(req, res) {
   const { modelId, price, stripeAccountId } = req.body;
 
   try {
-    // Calculamos el 20% de comisión para ti
-    const applicationFee = Math.round(price * 0.20 * 100); // Stripe usa centavos
-
-    const session = await stripe.checkout.sessions.create({
+    const isPrimary = stripeAccountId === 'primary';
+    const checkoutOptions = {
       payment_method_types: ['card'],
       line_items: [{
         price_data: {
@@ -20,20 +18,26 @@ export default async function handler(req, res) {
             name: `Revelación Mística - Aura`,
             description: `Acceso a contenido exclusivo`,
           },
-          unit_amount: price * 100, // Precio total en centavos
+          unit_amount: price * 100,
         },
         quantity: 1,
       }],
       mode: 'payment',
-      payment_intent_data: {
-        application_fee_amount: applicationFee,
+      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.origin}/`,
+    };
+
+    // Si NO es cuenta primaria (es una modelo real), configuramos el split 80/20
+    if (!isPrimary) {
+      checkoutOptions.payment_intent_data = {
+        application_fee_amount: Math.round(price * 0.20 * 100),
         transfer_data: {
           destination: stripeAccountId,
         },
-      },
-      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin}/`,
-    });
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(checkoutOptions);
 
     return res.status(200).json({ url: session.url });
   } catch (error) {
