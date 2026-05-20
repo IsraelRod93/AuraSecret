@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
-  const apiKey = (process.env.GROQ_API_KEY || "").trim();
-  if (!apiKey) return res.status(500).json({ error: "Falta GROQ_API_KEY en Vercel." });
+  const apiKey = (process.env.GROG_API_KEY || "").trim();
+  if (!apiKey) return res.status(500).json({ error: "Falta GROG_API_KEY en Vercel." });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { messages } = req.body;
