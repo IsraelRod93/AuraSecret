@@ -1,10 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 import AdminPanel from './Admin';
 import ModelOnboarding from './Onboarding';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+}
+
+interface Model {
+  id: string;
+  name: string;
+  price: number;
+  photo_url: string;
+  stripe_account_id: string;
 }
 
 const App: React.FC = () => {
@@ -21,7 +30,46 @@ const App: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showMatch, setShowMatch] = useState(false);
+  const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Cargar una modelo aleatoria al inicio
+  useEffect(() => {
+    const fetchModel = async () => {
+      const { data, error } = await supabase
+        .from('models')
+        .select('*')
+        .not('stripe_account_id', 'is', null) // Solo modelos con banco vinculado
+        .limit(1);
+      
+      if (data && data.length > 0) {
+        setCurrentModel(data[0]);
+      }
+    };
+    fetchModel();
+  }, []);
+
+  const handlePayment = async () => {
+    if (!currentModel) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelId: currentModel.id,
+          price: currentModel.price,
+          stripeAccountId: currentModel.stripe_account_id
+        }),
+      });
+      const data = await res.json();
+      window.location.href = data.url;
+    } catch (err) {
+      alert("Error al procesar el pago");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -90,17 +138,17 @@ const App: React.FC = () => {
           <div style={styles.matchCard}>
             <div style={styles.blurContainer}>
               <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&h=500" 
+                src={currentModel?.photo_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&h=500"} 
                 alt="Destiny Match" 
                 style={styles.blurredImg}
               />
               <div style={styles.overlayText}>99% MATCH</div>
             </div>
             <div style={styles.cardContent}>
-              <h3 style={styles.cardTitle}>Tu Alma Gemela Detectada</h3>
+              <h3 style={styles.cardTitle}>{currentModel?.name || "Tu Alma Gemela"} Detectada</h3>
               <p style={styles.cardDesc}>Tu energía vibra en sintonía con ella. ¿Quieres ver lo que el destino tiene para ti?</p>
-              <button style={styles.buyButton} onClick={() => window.location.href = 'https://buy.stripe.com/5kQ7sK0Cu0kf4gR7SFbMQ00'}>
-                DESBLOQUEAR FOTOS POR $49 MXN
+              <button style={styles.buyButton} onClick={handlePayment} disabled={loading}>
+                {loading ? 'Redirigiendo...' : `DESBLOQUEAR FOTOS POR $${currentModel?.price || 49} MXN`}
               </button>
             </div>
           </div>

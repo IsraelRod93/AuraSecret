@@ -9,37 +9,62 @@ const ModelOnboarding: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
 
+  const [modelId, setModelId] = useState<string | null>(null);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // 1. Subir Foto a Vercel Blob (usando el endpoint que ya creamos)
-      const formData = new FormData();
       if (!file) return;
-
+      
+      // 1. Subir Foto
       const uploadRes = await fetch(`/api/upload?filename=${file.name}`, {
         method: 'POST',
-        headers: { 'x-admin-password': 'TEMPORAL_PASSWORD' }, // Deberás configurar esto
+        headers: { 'x-admin-password': 'TEMPORAL_PASSWORD' },
         body: file,
       });
       const uploadData = await uploadRes.json();
 
       // 2. Guardar en Supabase
-      const { error } = await supabase.from('models').insert([
+      const { data, error } = await supabase.from('models').insert([
         { 
           name, 
           price: parseInt(price), 
           photo_url: uploadData.url,
           status: 'pending_stripe'
         }
-      ]);
+      ]).select();
 
       if (error) throw error;
+      setModelId(data[0].id);
       setStep(2);
     } catch (err) {
       alert('Error en el registro');
-      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStripeConnect = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/stripe-onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modelId }),
+      });
+      const data = await res.json();
+      
+      // Guardar el accountId en Supabase antes de ir a Stripe
+      await supabase
+        .from('models')
+        .update({ stripe_account_id: data.accountId })
+        .eq('id', modelId);
+
+      window.location.href = data.url;
+    } catch (err) {
+      alert('Error conectando con Stripe');
     } finally {
       setLoading(false);
     }
@@ -54,9 +79,10 @@ const ModelOnboarding: React.FC = () => {
           <p style={styles.subtitle}>Para recibir tus pagos (80% para ti), necesitamos vincular tu cuenta bancaria a través de Stripe.</p>
           <button 
             style={styles.button} 
-            onClick={() => window.location.href = '/api/stripe-connect'}
+            onClick={handleStripeConnect}
+            disabled={loading}
           >
-            VINCULAR MI BANCO
+            {loading ? 'Conectando...' : 'VINCULAR MI BANCO'}
           </button>
         </div>
       </div>
