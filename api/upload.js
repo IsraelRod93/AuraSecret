@@ -1,34 +1,28 @@
 import { put } from '@vercel/blob';
 
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { searchParams } = new URL(req.url);
-  const filename = searchParams.get('filename');
-  const password = req.headers.get('x-admin-password');
+  const filename = req.query.filename;
+  const password = req.headers['x-admin-password'];
 
-  // Seguridad básica: Contraseña simple para el MVP
   if (password !== process.env.ADMIN_PASSWORD) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   if (!filename) {
-    return new Response(JSON.stringify({ error: 'Filename is required' }), { status: 400 });
+    return res.status(400).json({ error: 'Filename is required' });
   }
 
   try {
-    const blob = await put(filename, req.body, {
+    const blob = await put(filename, req, {
       access: 'public',
     });
 
-    return new Response(JSON.stringify(blob), { status: 200 });
+    return res.status(200).json(blob);
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return res.status(500).json({ error: error.message });
   }
 }
