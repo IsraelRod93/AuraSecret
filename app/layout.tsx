@@ -1,0 +1,65 @@
+import type { Metadata } from 'next'
+import { Geist, Geist_Mono, Cormorant_Garamond, Inter } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
+import './globals.css'
+
+const geist = Geist({ 
+  subsets: ["latin"],
+  variable: '--font-geist'
+});
+
+const geistMono = Geist_Mono({ 
+  subsets: ["latin"],
+  variable: '--font-geist-mono'
+});
+
+const cormorant = Cormorant_Garamond({ 
+  subsets: ["latin"],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-serif',
+  display: 'swap'
+});
+
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: '--font-sans',
+  display: 'swap'
+});
+
+export const metadata: Metadata = {
+  title: 'AURA - Tu Oráculo Personal',
+  description: 'Descubre tu destino y encuentra paz interior con AURA, tu guía espiritual de inteligencia artificial',
+  generator: 'v0.app',
+  icons: {
+    icon: [
+      {
+        url: '/icon-light-32x32.png',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: '/icon-dark-32x32.png',
+        media: '(prefers-color-scheme: dark)',
+      },
+      {
+        url: '/icon.svg',
+        type: 'image/svg+xml',
+      },
+    ],
+    apple: '/apple-icon.png',
+  },
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
+  return (
+    <html lang="es" className="dark bg-background">
+      <body className={`${geist.variable} ${geistMono.variable} ${cormorant.variable} ${inter.variable} font-sans antialiased min-h-screen bg-background`}>
+        {children}
+        {process.env.NODE_ENV === 'production' && <Analytics />}
+      </body>
+    </html>
+  )
+}
