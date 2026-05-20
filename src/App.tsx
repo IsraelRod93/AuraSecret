@@ -82,8 +82,8 @@ const App: React.FC = () => {
             <div style={styles.cardContent}>
               <h3 style={styles.cardTitle}>Tu Alma Gemela Detectada</h3>
               <p style={styles.cardDesc}>Tu energía vibra en sintonía con ella. ¿Quieres ver lo que el destino tiene para ti?</p>
-              <button style={styles.buyButton} onClick={() => alert("Redirigiendo a pago...")}>
-                DESBLOQUEAR FOTOS POR $35 MXN
+              <button style={styles.buyButton} onClick={() => window.location.href = 'https://buy.stripe.com/5kQ7sK0Cu0kf4gR7SFbMQ00'}>
+                DESBLOQUEAR FOTOS POR $49 MXN
               </button>
             </div>
           </div>
