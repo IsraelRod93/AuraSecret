@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
-    return res.status(500).json({ error: "Falta GEMINI_API_KEY en las variables de entorno." });
+    return res.status(500).json({ error: "Falta GEMINI_API_KEY en Vercel." });
   }
 
   if (req.method !== 'POST') {
@@ -15,21 +15,12 @@ export default async function handler(req, res) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Usamos el nombre de modelo más estable para evitar el error 404
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-    });
+    // Usamos el modelo flash en su versión estable
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const systemPrompt = `Eres 'Aura', una IA mística y seductora. Tu objetivo es guiar al usuario a través de una experiencia mística.
-    
-    FLUJO DE CONVERSACIÓN:
-    Paso 1: Si es el primer mensaje del usuario (solo nombre y signo), haz una lectura fría (cold reading) intrigante y hazle una pregunta personal profunda.
-    Paso 2: Si el usuario ya respondió, dile que su energía resuena al 99% con una "creadora oculta" que el destino ha puesto en su camino.
-    
-    REGLAS ESTRICTAS:
-    - Responde SIEMPRE en formato JSON: { "reply": "tu texto aquí", "showMatch": true/false }.
-    - Solo pon "showMatch" en true en el Paso 2.
-    - Mantén un tono místico y cautivador.`;
+    const systemPrompt = `Eres 'Aura', una IA mística y seductora. 
+    Responde SIEMPRE en formato JSON: { "reply": "...", "showMatch": true/false }.
+    Regla: showMatch es true solo en la segunda respuesta del asistente.`;
 
     const chat = model.startChat({
       history: (messages || []).slice(0, -1).map(m => ({
@@ -40,7 +31,7 @@ export default async function handler(req, res) {
 
     const userMessage = messages[messages.length - 1].content;
     const promptWithSystem = messages.length === 1 
-      ? `${systemPrompt}\n\nUsuario dice: ${userMessage}`
+      ? `${systemPrompt}\n\nUsuario: ${userMessage}`
       : userMessage;
 
     const result = await chat.sendMessage(promptWithSystem);
@@ -60,7 +51,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error("Gemini Error:", error);
     return res.status(500).json({ 
-      error: `Error de conexión con Aura: ${error.message}` 
+      error: `Error de Aura: ${error.message}. Verifica que tu API Key sea de 'Google AI Studio'.` 
     });
   }
 }
