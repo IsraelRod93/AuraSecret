@@ -3,8 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
   
-  if (!apiKey) {
-    return res.status(500).json({ error: "Falta GEMINI_API_KEY en Vercel." });
+  if (!apiKey || !apiKey.startsWith('AIza')) {
+    return res.status(500).json({ error: "La API Key no parece válida o no empieza con 'AIza'. Búscala en Google AI Studio." });
   }
 
   if (req.method !== 'POST') {
@@ -16,27 +16,10 @@ export default async function handler(req, res) {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // FORZAMOS LA VERSIÓN v1 DE LA API (la estable)
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-1.5-flash" },
-      { apiVersion: 'v1' }
-    );
+    // Intentamos con el modelo más reciente y estable
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-    const systemPrompt = `Eres 'Aura', una IA mística. Responde en JSON: { "reply": "...", "showMatch": true/false }.`;
-
-    const chat = model.startChat({
-      history: (messages || []).slice(0, -1).map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }],
-      })),
-    });
-
-    const userMessage = messages[messages.length - 1].content;
-    const promptWithSystem = messages.length === 1 
-      ? `${systemPrompt}\n\nUsuario: ${userMessage}`
-      : userMessage;
-
-    const result = await chat.sendMessage(promptWithSystem);
+    const result = await model.generateContent(messages[messages.length - 1].content);
     const responseText = result.response.text();
     
     try {
@@ -51,9 +34,21 @@ export default async function handler(req, res) {
     }
 
   } catch (error) {
-    console.error("Detailed Gemini Error:", error);
-    return res.status(500).json({ 
-      error: `Error de Aura (v1): ${error.message}.` 
-    });
+    console.error("Gemini Error:", error);
+    
+    // Si falla el modelo flash, intentamos con el Pro original como último recurso
+    try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const modelFallback = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const resultFallback = await modelFallback.generateContent(messages[messages.length - 1].content);
+        return res.status(200).json({ 
+            reply: resultFallback.response.text(), 
+            showMatch: messages.length >= 2 
+        });
+    } catch (fallbackError) {
+        return res.status(500).json({ 
+            error: `Error crítico: Google no encuentra el modelo. Esto pasa si tu API Key es muy antigua o de Google Cloud. Por favor, genera una NUEVA en aistudio.google.com.` 
+        });
+    }
   }
 }
