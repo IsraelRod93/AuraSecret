@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import AdminPanel from './Admin';
+import ModelOnboarding from './Onboarding';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -11,6 +12,9 @@ const App: React.FC = () => {
   const path = window.location.pathname;
   if (path === '/admin-upload') {
     return <AdminPanel />;
+  }
+  if (path === '/join') {
+    return <ModelOnboarding />;
   }
 
   const [messages, setMessages] = useState<Message[]>([]);
