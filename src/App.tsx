@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import AdminPanel from './Admin';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -6,6 +7,12 @@ interface Message {
 }
 
 const App: React.FC = () => {
+  // Simple "Router"
+  const path = window.location.pathname;
+  if (path === '/admin-upload') {
+    return <AdminPanel />;
+  }
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
