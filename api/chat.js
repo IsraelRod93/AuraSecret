@@ -5,9 +5,8 @@ export default async function handler(req, res) {
   const { messages } = req.body;
   const userMessage = messages[messages.length - 1].content;
 
-  // Forzamos el modelo 2.0 Flash que es el más estable y con mejor cuota gratuita
-  const modelName = "gemini-2.0-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  // Intentamos con el modelo 1.5 Flash en la API v1 (la más estable del mundo)
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   try {
     const response = await fetch(url, {
@@ -24,7 +23,7 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       return res.status(response.status).json({ 
-        error: `Error de Cuota/API: ${data.error?.message || 'Intenta de nuevo en unos segundos.'}` 
+        error: `Google bloqueó el acceso (Cuota 0). Esto es una restricción de Google en tu país o cuenta. Mensaje: ${data.error?.message}` 
       });
     }
 
@@ -38,6 +37,6 @@ export default async function handler(req, res) {
     }
 
   } catch (error) {
-    return res.status(500).json({ error: `Error de red: ${error.message}` });
+    return res.status(500).json({ error: `Error técnico de red: ${error.message}` });
   }
 }
