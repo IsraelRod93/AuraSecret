@@ -65,11 +65,12 @@ export function AuraChat() {
       });
 
       const data = await response.json();
+      console.log("API Response:", data);
       
       const oracleMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "oracle",
-        content: data.reply || "El oráculo está meditando...",
+        content: data.reply || data.error || "El oráculo está meditando...",
       };
       
       setMessages((prev) => [...prev, oracleMessage]);
