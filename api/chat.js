@@ -5,38 +5,37 @@ export default async function handler(req, res) {
   const { messages } = req.body;
   const userMessage = messages[messages.length - 1].content;
 
-  // Intentamos con el modelo 1.5 Flash en la API v1 (la más estable del mundo)
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: `Eres 'Aura', una IA mística. Responde en JSON: {"reply": "...", "showMatch": true/false}. Usuario: ${userMessage}` }]
-        }]
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({ 
-        error: `Google bloqueó el acceso (Cuota 0). Esto es una restricción de Google en tu país o cuenta. Mensaje: ${data.error?.message}` 
-      });
-    }
-
-    const responseText = data.candidates[0].content.parts[0].text;
-    const cleanJson = responseText.replace(/```json|```/g, '').trim();
-    
+  // Probamos con los nombres de modelos que SALIERON en tu lista de disponibles
+  const modelsToTry = ["gemini-flash-latest", "gemini-pro-latest", "gemini-1.5-flash-latest"];
+  
+  for (const modelName of modelsToTry) {
     try {
-      return res.status(200).json(JSON.parse(cleanJson));
-    } catch (e) {
-      return res.status(200).json({ reply: responseText, showMatch: messages.length >= 2 });
-    }
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `Eres 'Aura', una IA mística. Responde en JSON: {"reply": "...", "showMatch": true/false}. Usuario: ${userMessage}` }] }]
+        })
+      });
 
-  } catch (error) {
-    return res.status(500).json({ error: `Error técnico de red: ${error.message}` });
+      const data = await response.json();
+
+      if (response.ok) {
+        const responseText = data.candidates[0].content.parts[0].text;
+        const cleanJson = responseText.replace(/```json|```/g, '').trim();
+        return res.status(200).json(JSON.parse(cleanJson));
+      }
+
+      // Si es un error de cuota 0, probamos el siguiente modelo
+      console.log(`Fallo con ${modelName}: ${data.error?.message}`);
+      if (modelName === modelsToTry[modelsToTry.length - 1]) {
+        return res.status(500).json({ 
+          error: `BLOQUEO DE GOOGLE: Tu cuenta tiene "Cuota 0" en todos los modelos disponibles. Esto no es un error de código, es Google restringiendo tu país o cuenta. Mensaje: ${data.error?.message}` 
+        });
+      }
+    } catch (e) {
+      continue;
+    }
   }
 }
