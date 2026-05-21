@@ -8,14 +8,30 @@ export async function GET(request: NextRequest) {
   try {
     const db = getSupabase();
 
-    // Diagnostic: test if any table works
     if (request.nextUrl.searchParams.get('debug') === '1') {
-      const t1 = await db.from('companions').select('id').limit(1);
-      const t2 = await db.from('users').select('id').limit(1);
+      const t1 = await db.schema('public').from('companions').select('id').limit(1);
+      const t2 = await db.from('companions').select('id').limit(1);
+      // Direct REST test
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      let directResult = null;
+      try {
+        const res = await fetch(`${url}/rest/v1/companions?select=id&limit=1`, {
+          headers: {
+            'apikey': key || '',
+            'Authorization': `Bearer ${key}`,
+          },
+        });
+        directResult = { status: res.status, body: await res.text() };
+      } catch (e) {
+        directResult = { error: String(e) };
+      }
       return NextResponse.json({
-        companions_result: { data: t1.data, error: t1.error },
-        users_result: { data: t2.data, error: t2.error },
-        supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30) + '...',
+        with_schema: { data: t1.data, error: t1.error },
+        without_schema: { data: t2.data, error: t2.error },
+        direct_rest: directResult,
+        url_prefix: url?.slice(0, 40),
+        key_prefix: key?.slice(0, 15),
       });
     }
 
