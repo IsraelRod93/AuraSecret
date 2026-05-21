@@ -4,17 +4,37 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, LogIn } from 'lucide-react';
 
+function getCookie(name: string) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
+}
+
+function setCookie(name: string, value: string) {
+  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+}
+
 export default function PanelHome() {
   const router = useRouter();
-  const [companionId, setCompanionId] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('companionId');
+    const saved = localStorage.getItem('companionId') || getCookie('companionId');
     if (saved) {
+      setCookie('companionId', saved);
+      localStorage.setItem('companionId', saved);
       router.replace(`/panel/${saved}`);
+    } else {
+      setChecking(false);
     }
-    setCompanionId(saved);
   }, []);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Sparkles className="text-primary animate-pulse" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center font-serif p-5">
@@ -37,6 +57,7 @@ export default function PanelHome() {
             onClick={() => {
               const id = prompt('Ingresa tu ID de companera:');
               if (id) {
+                setCookie('companionId', id);
                 localStorage.setItem('companionId', id);
                 router.push(`/panel/${id}`);
               }

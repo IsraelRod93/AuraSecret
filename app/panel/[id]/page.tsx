@@ -52,6 +52,7 @@ export default function PanelDashboard({ params }: { params: Promise<{ id: strin
 
   useEffect(() => {
     localStorage.setItem('companionId', companionId);
+    document.cookie = `companionId=${companionId};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
     loadAll();
   }, [companionId]);
 
@@ -169,6 +170,7 @@ export default function PanelDashboard({ params }: { params: Promise<{ id: strin
 
   const handleLogout = () => {
     localStorage.removeItem('companionId');
+    document.cookie = 'companionId=;path=/;max-age=0';
     window.location.href = '/panel';
   };
 

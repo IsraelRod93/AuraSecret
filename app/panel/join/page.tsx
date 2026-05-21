@@ -58,6 +58,7 @@ export default function PanelJoinPage() {
 
       setModelId(data.companion.id);
       localStorage.setItem('companionId', data.companion.id);
+      document.cookie = `companionId=${data.companion.id};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
       setDone(true);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error en el registro');
