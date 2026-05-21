@@ -1,16 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
+import { getDb } from '@/lib/db';
 import { callGroq } from '@/lib/groq';
 
 export async function GET() {
   try {
-    const { data: logs, error: dbError } = await getSupabase()
-      .from('loss_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (dbError) throw dbError;
+    const sql = getDb();
+    const logs = await sql`
+      SELECT * FROM loss_logs ORDER BY created_at DESC LIMIT 50
+    `;
 
     if (!logs || logs.length === 0) {
       return NextResponse.json({ reply: "Aun no hay suficientes datos de perdida para analizar." });

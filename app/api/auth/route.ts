@@ -4,7 +4,7 @@ import { getDb } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
-    const { initData } = await request.json();
+    const { initData, referralCode } = await request.json();
 
     if (!initData) {
       return NextResponse.json({ error: 'initData required' }, { status: 400 });
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid Telegram data' }, { status: 401 });
     }
 
-    const { user: tgUser } = validated;
+    const { user: tgUser, start_param } = validated;
     const sql = getDb();
 
     const [existing] = await sql`
@@ -30,11 +30,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ user: existing });
     }
 
+    const refCode = referralCode || start_param || null;
+    let referrerId = null;
+
+    if (refCode && typeof refCode === 'string' && refCode.startsWith('ref_')) {
+      const refTelegramId = refCode.replace('ref_', '');
+      const [referrer] = await sql`
+        SELECT id FROM users WHERE telegram_id = ${Number(refTelegramId)} LIMIT 1
+      `;
+      if (referrer) referrerId = referrer.id;
+    }
+
     const [newUser] = await sql`
-      INSERT INTO users (telegram_id, username, first_name)
-      VALUES (${tgUser.id}, ${tgUser.username || null}, ${tgUser.first_name})
+      INSERT INTO users (telegram_id, username, first_name, referred_by)
+      VALUES (${tgUser.id}, ${tgUser.username || null}, ${tgUser.first_name}, ${referrerId})
       RETURNING *
     `;
+
+    if (referrerId) {
+      await sql`
+        UPDATE users SET referral_count = COALESCE(referral_count, 0) + 1
+        WHERE id = ${referrerId}
+      `;
+    }
 
     return NextResponse.json({ user: newUser });
   } catch (error) {

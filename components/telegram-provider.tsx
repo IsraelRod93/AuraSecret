@@ -47,6 +47,7 @@ declare global {
         initData: string;
         initDataUnsafe: {
           user?: TelegramUser;
+          start_param?: string;
         };
         ready: () => void;
         expand: () => void;
@@ -94,7 +95,10 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData: tg.initData }),
+        body: JSON.stringify({
+          initData: tg.initData,
+          referralCode: tg.initDataUnsafe.start_param || null,
+        }),
       });
 
       if (res.ok) {

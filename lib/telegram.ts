@@ -12,6 +12,7 @@ export interface ValidatedTelegramData {
   user: TelegramUser;
   auth_date: number;
   hash: string;
+  start_param?: string;
 }
 
 export function validateTelegramInitData(initData: string): ValidatedTelegramData | null {
@@ -49,7 +50,8 @@ export function validateTelegramInitData(initData: string): ValidatedTelegramDat
 
   try {
     const user: TelegramUser = JSON.parse(userStr);
-    return { user, auth_date: authDate, hash };
+    const start_param = params.get('start_param') || undefined;
+    return { user, auth_date: authDate, hash, start_param };
   } catch {
     return null;
   }

@@ -2,18 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
-  const { name, photo_url, price } = await request.json();
+  const { name, photo_url, price, age, location, personality_type, tagline, description } = await request.json();
 
   if (!name || !photo_url) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  }
+
+  if (age && Number(age) < 18) {
+    return NextResponse.json({ error: 'Debes tener al menos 18 anos para registrarte' }, { status: 403 });
   }
 
   const sql = getDb();
 
   try {
     const [companion] = await sql`
-      INSERT INTO companions (name, type, photo_url, status, description, tagline)
-      VALUES (${name}, 'human', ${photo_url}, 'pending', ${'Modelo ' + name}, 'Nueva en Aura')
+      INSERT INTO companions (name, type, photo_url, status, description, tagline, age, location, personality_type)
+      VALUES (
+        ${name}, 'human', ${photo_url}, 'pending',
+        ${description || 'Modelo ' + name},
+        ${tagline || 'Nueva en Aura'},
+        ${age || null},
+        ${location || null},
+        ${personality_type || null}
+      )
       RETURNING *
     `;
 

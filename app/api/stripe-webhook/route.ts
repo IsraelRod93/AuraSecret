@@ -42,6 +42,16 @@ export async function POST(request: NextRequest) {
             UPDATE users SET options_unlocked = true
             WHERE id = ${metadata.userId}::uuid
           `;
+
+          const [payer] = await sql`
+            SELECT referred_by FROM users WHERE id = ${metadata.userId}::uuid LIMIT 1
+          `;
+          if (payer?.referred_by) {
+            await sql`
+              UPDATE users SET options_unlocked = true
+              WHERE id = ${payer.referred_by} AND options_unlocked = false
+            `;
+          }
         }
 
         if (metadata.type === 'vault_purchase') {
