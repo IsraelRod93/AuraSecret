@@ -51,6 +51,7 @@ export default function DashboardPage({ params }: { params: Promise<{ companionI
   const [groupPrice, setGroupPrice] = useState('');
 
   useEffect(() => {
+    localStorage.setItem('companionId', companionId);
     loadAll();
   }, [companionId]);
 

@@ -1,27 +1,39 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Users, MessageCircle } from "lucide-react";
-
-const NAV_ITEMS = [
-  { label: "Aura", href: "/", icon: Sparkles },
-  { label: "Galeria", href: "/gallery", icon: Users },
-  { label: "Chats", href: "/chats", icon: MessageCircle },
-];
+import { Sparkles, Users, MessageCircle, LayoutDashboard } from "lucide-react";
 
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [companionId, setCompanionId] = useState<string | null>(null);
 
-  const isInChat = pathname.startsWith('/chat/') || pathname.startsWith('/vault/');
-  if (isInChat) return null;
+  useEffect(() => {
+    setCompanionId(localStorage.getItem('companionId'));
+  }, []);
+
+  const isHidden = pathname.startsWith('/chat/') || pathname.startsWith('/vault/') || pathname.startsWith('/join');
+  if (isHidden) return null;
+
+  const navItems = companionId
+    ? [
+        { label: "Dashboard", href: `/dashboard/${companionId}`, icon: LayoutDashboard },
+        { label: "Galeria", href: "/gallery", icon: Users },
+        { label: "Chats", href: "/chats", icon: MessageCircle },
+      ]
+    : [
+        { label: "Aura", href: "/", icon: Sparkles },
+        { label: "Galeria", href: "/gallery", icon: Users },
+        { label: "Chats", href: "/chats", icon: MessageCircle },
+      ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 pb-safe">
       <div className="max-w-lg mx-auto px-2 pb-2">
         <div className="glass-card rounded-2xl flex items-center justify-around py-2 border border-border/30">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = item.href === '/'
               ? pathname === '/'
               : pathname.startsWith(item.href);

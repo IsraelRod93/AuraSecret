@@ -57,6 +57,7 @@ export default function JoinPage() {
       if (data.error) throw new Error(data.error);
 
       setModelId(data.companion.id);
+      localStorage.setItem('companionId', data.companion.id);
       setDone(true);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error en el registro');
