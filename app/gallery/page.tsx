@@ -173,7 +173,7 @@ export default function GalleryPage() {
         </AnimatePresence>
 
         {/* Action buttons */}
-        <div className="mt-6 space-y-3 pb-8">
+        <div className="mt-6 space-y-3 pb-24">
           {selectedIds.length > 0 && (
             <motion.button
               className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-lg"
