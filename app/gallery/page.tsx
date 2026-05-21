@@ -7,7 +7,7 @@ import { X, Heart, Sparkles, MessageCircle } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { PaywallModal } from "@/components/paywall-modal";
 import { useTelegram } from "@/components/telegram-provider";
-import { openPaymentLink } from "@/lib/open-payment";
+import { payWithTelegram } from "@/lib/open-payment";
 
 interface Companion {
   id: string;
@@ -92,19 +92,17 @@ function GalleryPage() {
   const handlePayForMore = async () => {
     setPayLoading(true);
     try {
-      const res = await fetch('/api/gallery-unlock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: appUser?.id || 'anonymous' }),
+      const paid = await payWithTelegram({
+        type: 'gallery_unlock',
+        userId: appUser?.id || undefined,
       });
-      const data = await res.json();
-      if (data.url) {
-        openPaymentLink(data.url);
-      } else {
-        alert(data.error || 'Error al procesar el pago');
+      if (paid) {
+        await loadCompanions();
+        setShowPaywall(false);
+        setCurrentIndex(0);
       }
     } catch (e) {
-      alert('Error de conexion. Intenta de nuevo.');
+      alert(e instanceof Error ? e.message : 'Error de conexion. Intenta de nuevo.');
     } finally {
       setPayLoading(false);
     }
@@ -326,7 +324,7 @@ function GalleryPage() {
         loading={payLoading}
         title="El destino tiene mas para ti"
         description="Desbloquea mas conexiones especiales"
-        price="$10 MXN"
+        price="50 Stars"
         buttonText="VER MAS OPCIONES"
       />
     </div>

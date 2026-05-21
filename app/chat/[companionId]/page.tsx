@@ -7,7 +7,7 @@ import { Send, Sparkles, ArrowLeft, Lock, ShoppingBag } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { SubscriptionModal } from "@/components/subscription-modal";
 import { useTelegram } from "@/components/telegram-provider";
-import { openPaymentLink } from "@/lib/open-payment";
+import { payWithTelegram } from "@/lib/open-payment";
 
 interface Message {
   id: string;
@@ -138,15 +138,16 @@ export default function CompanionChatPage({ params }: { params: Promise<{ compan
   const handleSubscribe = async () => {
     setSubLoading(true);
     try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: appUser?.id }),
+      const paid = await payWithTelegram({
+        type: 'subscription',
+        userId: appUser?.id || undefined,
       });
-      const data = await res.json();
-      if (data.url) openPaymentLink(data.url);
-    } catch {
-      // ignore
+      if (paid) {
+        setIsSubscribed(true);
+        setShowSubscription(false);
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error al procesar el pago');
     } finally {
       setSubLoading(false);
     }

@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\" -Recurse -File)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-Item -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\" -ErrorAction SilentlyContinue)",
+      "Bash(Get-ChildItem -File)",
+      "Bash(Select-Object Name)",
+      "Bash(npm install *)",
+      "Bash(npx next *)",
+      "Bash(rm -rf \"C:\\\\Users\\\\Israel\\\\AuraSecret\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\Israel\\\\AuraSecret\")",
+      "Bash(rsync -a --exclude='node_modules' --exclude='.next' --exclude='.git' . \"C:\\\\Users\\\\Israel\\\\AuraSecret/\")",
+      "Bash(git add *)",
+      "Bash(git rm *)",
+      "Bash(git commit -m '@ *)",
+      "Bash(git push *)",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(Remove-Item *)",
+      "Bash(npm ls *)",
+      "PowerShell(New-Item *)",
+      "Bash(Copy-Item -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\app\\\\*\" -Destination \"C:\\\\Users\\\\Israel\\\\AuraSecret\\\\app\\\\\" -Recurse -Force; Copy-Item -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\lib\\\\*\" -Destination \"C:\\\\Users\\\\Israel\\\\AuraSecret\\\\lib\\\\\" -Recurse -Force)",
+      "Bash(Copy-Item -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\components\\\\*\" -Destination \"C:\\\\Users\\\\Israel\\\\AuraSecret\\\\components\\\\\" -Recurse -Force; Write-Output \"Synced OK\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

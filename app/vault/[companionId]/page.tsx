@@ -7,7 +7,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { VaultGrid } from "@/components/vault-grid";
 import { useTelegram } from "@/components/telegram-provider";
-import { openPaymentLink } from "@/lib/open-payment";
+import { payWithTelegram } from "@/lib/open-payment";
 
 interface VaultItem {
   id: string;
@@ -53,15 +53,16 @@ export default function VaultPage({ params }: { params: Promise<{ companionId: s
     setPurchaseLoading(itemId);
 
     try {
-      const res = await fetch('/api/vault-purchase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: appUser.id, vaultItemId: itemId }),
+      const paid = await payWithTelegram({
+        type: 'vault_purchase',
+        userId: appUser.id,
+        vaultItemId: itemId,
       });
-      const data = await res.json();
-      if (data.url) openPaymentLink(data.url);
-    } catch {
-      // ignore
+      if (paid) {
+        await loadVault();
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error al procesar el pago');
     } finally {
       setPurchaseLoading(null);
     }
