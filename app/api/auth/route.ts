@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateTelegramInitData } from '@/lib/telegram';
-import { getSupabase } from '@/lib/supabase';
+import { getDb } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,37 +16,25 @@ export async function POST(request: NextRequest) {
     }
 
     const { user: tgUser } = validated;
-    const db = getSupabase();
+    const sql = getDb();
 
-    const { data: existing } = await db
-      .from('users')
-      .select('*')
-      .eq('telegram_id', tgUser.id)
-      .single();
+    const [existing] = await sql`
+      SELECT * FROM users WHERE telegram_id = ${tgUser.id} LIMIT 1
+    `;
 
     if (existing) {
-      await db
-        .from('users')
-        .update({
-          username: tgUser.username || null,
-          first_name: tgUser.first_name,
-        })
-        .eq('id', existing.id);
-
+      await sql`
+        UPDATE users SET username = ${tgUser.username || null}, first_name = ${tgUser.first_name}
+        WHERE id = ${existing.id}
+      `;
       return NextResponse.json({ user: existing });
     }
 
-    const { data: newUser, error } = await db
-      .from('users')
-      .insert([{
-        telegram_id: tgUser.id,
-        username: tgUser.username || null,
-        first_name: tgUser.first_name,
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
+    const [newUser] = await sql`
+      INSERT INTO users (telegram_id, username, first_name)
+      VALUES (${tgUser.id}, ${tgUser.username || null}, ${tgUser.first_name})
+      RETURNING *
+    `;
 
     return NextResponse.json({ user: newUser });
   } catch (error) {

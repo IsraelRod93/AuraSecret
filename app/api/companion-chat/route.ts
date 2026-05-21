@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
+import { getDb } from '@/lib/db';
 import { callGroq } from '@/lib/groq';
 
 const FREE_MESSAGE_LIMIT = 7;
@@ -12,44 +12,39 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing params' }, { status: 400 });
   }
 
-  const db = getSupabase();
+  const sql = getDb();
 
   try {
-    const { data: companion } = await db
-      .from('companions')
-      .select('id, name, type, photo_url, tagline, description')
-      .eq('id', companionId)
-      .single();
+    const [companion] = await sql`
+      SELECT id, name, type, photo_url, tagline, description
+      FROM companions WHERE id = ${companionId} LIMIT 1
+    `;
 
-    const { data: conversation } = await db
-      .from('conversations')
-      .select('id, message_count')
-      .eq('user_id', userId)
-      .eq('companion_id', companionId)
-      .single();
+    const [conversation] = await sql`
+      SELECT id, message_count FROM conversations
+      WHERE user_id = ${userId} AND companion_id = ${companionId} LIMIT 1
+    `;
 
-    let messages: { role: string; content: string; created_at: string }[] = [];
+    let messages: any[] = [];
     if (conversation) {
-      const { data } = await db
-        .from('messages')
-        .select('role, content, created_at')
-        .eq('conversation_id', conversation.id)
-        .order('created_at', { ascending: true });
-      messages = data || [];
+      messages = await sql`
+        SELECT role, content, created_at FROM messages
+        WHERE conversation_id = ${conversation.id}
+        ORDER BY created_at ASC
+      `;
     }
 
-    const { data: user } = await db
-      .from('users')
-      .select('subscription_status, subscription_expires_at')
-      .eq('id', userId)
-      .single();
+    const [user] = await sql`
+      SELECT subscription_status, subscription_expires_at
+      FROM users WHERE id = ${userId} LIMIT 1
+    `;
 
     const isSubscribed = user?.subscription_status === 'active' &&
       user?.subscription_expires_at &&
       new Date(user.subscription_expires_at) > new Date();
 
     return NextResponse.json({
-      companion,
+      companion: companion || null,
       messages,
       messagesUsed: conversation?.message_count || 0,
       isSubscribed,
@@ -67,34 +62,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  const db = getSupabase();
+  const sql = getDb();
 
   try {
-    const { data: companion } = await db
-      .from('companions')
-      .select('*')
-      .eq('id', companionId)
-      .single();
+    const [companion] = await sql`
+      SELECT * FROM companions WHERE id = ${companionId} LIMIT 1
+    `;
 
     if (!companion) {
       return NextResponse.json({ error: 'Companion not found' }, { status: 404 });
     }
 
     if (companion.type === 'human') {
-      return handleHumanMessage(db, userId, companionId, message);
+      return handleHumanMessage(sql, userId, companionId, message);
     }
 
-    const { data: user } = await db
-      .from('users')
-      .select('subscription_status, subscription_expires_at')
-      .eq('id', userId)
-      .single();
+    const [user] = await sql`
+      SELECT subscription_status, subscription_expires_at
+      FROM users WHERE id = ${userId} LIMIT 1
+    `;
 
     const isSubscribed = user?.subscription_status === 'active' &&
       user?.subscription_expires_at &&
       new Date(user.subscription_expires_at) > new Date();
 
-    let conversation = await getOrCreateConversation(db, userId, companionId);
+    const conversation = await getOrCreateConversation(sql, userId, companionId);
 
     if (!isSubscribed && conversation.message_count >= FREE_MESSAGE_LIMIT) {
       return NextResponse.json({
@@ -105,24 +97,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await db.from('messages').insert({
-      conversation_id: conversation.id,
-      role: 'user',
-      content: message,
-    });
+    await sql`
+      INSERT INTO messages (conversation_id, role, content)
+      VALUES (${conversation.id}, 'user', ${message})
+    `;
 
-    const { data: history } = await db
-      .from('messages')
-      .select('role, content')
-      .eq('conversation_id', conversation.id)
-      .order('created_at', { ascending: true })
-      .limit(20);
+    const history = await sql`
+      SELECT role, content FROM messages
+      WHERE conversation_id = ${conversation.id}
+      ORDER BY created_at ASC LIMIT 20
+    `;
 
     const personalityPrompt = companion.personality_prompt || getDefaultPersonality(companion.name);
 
     const groqMessages = [
       { role: 'system' as const, content: personalityPrompt },
-      ...(history || []).map(m => ({
+      ...history.map(m => ({
         role: (m.role === 'companion' ? 'assistant' : 'user') as 'user' | 'assistant',
         content: m.content,
       })),
@@ -130,17 +120,16 @@ export async function POST(request: NextRequest) {
 
     const reply = await callGroq({ messages: groqMessages, temperature: 0.9 });
 
-    await db.from('messages').insert({
-      conversation_id: conversation.id,
-      role: 'companion',
-      content: reply,
-    });
+    await sql`
+      INSERT INTO messages (conversation_id, role, content)
+      VALUES (${conversation.id}, 'companion', ${reply})
+    `;
 
     const newCount = conversation.message_count + 1;
-    await db
-      .from('conversations')
-      .update({ message_count: newCount, updated_at: new Date().toISOString() })
-      .eq('id', conversation.id);
+    await sql`
+      UPDATE conversations SET message_count = ${newCount}, updated_at = NOW()
+      WHERE id = ${conversation.id}
+    `;
 
     return NextResponse.json({
       reply,
@@ -155,44 +144,41 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function getOrCreateConversation(db: ReturnType<typeof getSupabase>, userId: string, companionId: string) {
-  const { data: existing } = await db
-    .from('conversations')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('companion_id', companionId)
-    .single();
+async function getOrCreateConversation(sql: ReturnType<typeof getDb>, userId: string, companionId: string) {
+  const [existing] = await sql`
+    SELECT * FROM conversations
+    WHERE user_id = ${userId} AND companion_id = ${companionId} LIMIT 1
+  `;
 
   if (existing) return existing;
 
-  const { data: created, error } = await db
-    .from('conversations')
-    .insert({ user_id: userId, companion_id: companionId, message_count: 0 })
-    .select()
-    .single();
+  const [created] = await sql`
+    INSERT INTO conversations (user_id, companion_id, message_count)
+    VALUES (${userId}, ${companionId}, 0)
+    RETURNING *
+  `;
 
-  if (error) throw error;
   return created;
 }
 
-async function handleHumanMessage(db: ReturnType<typeof getSupabase>, userId: string, companionId: string, message: string) {
-  const conversation = await getOrCreateConversation(db, userId, companionId);
+async function handleHumanMessage(sql: ReturnType<typeof getDb>, userId: string, companionId: string, message: string) {
+  const conversation = await getOrCreateConversation(sql, userId, companionId);
 
-  await db.from('messages').insert({
-    conversation_id: conversation.id,
-    role: 'user',
-    content: message,
-  });
+  await sql`
+    INSERT INTO messages (conversation_id, role, content)
+    VALUES (${conversation.id}, 'user', ${message})
+  `;
 
-  await db
-    .from('conversations')
-    .update({ message_count: conversation.message_count + 1, updated_at: new Date().toISOString() })
-    .eq('id', conversation.id);
+  const newCount = conversation.message_count + 1;
+  await sql`
+    UPDATE conversations SET message_count = ${newCount}, updated_at = NOW()
+    WHERE id = ${conversation.id}
+  `;
 
   return NextResponse.json({
     reply: null,
     action: 'human_pending',
-    messagesUsed: conversation.message_count + 1,
+    messagesUsed: newCount,
   });
 }
 

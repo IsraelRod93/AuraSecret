@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
+import { getDb } from '@/lib/db';
 import { getStripe } from '@/lib/stripe';
 
 export async function POST(request: NextRequest) {
   const { userId, vaultItemId } = await request.json();
-  const db = getSupabase();
+  const sql = getDb();
   const stripe = getStripe();
 
   try {
-    const { data: item } = await db
-      .from('vault_items')
-      .select('*, companions!inner(name, stripe_account_id)')
-      .eq('id', vaultItemId)
-      .single();
+    const [item] = await sql`
+      SELECT vi.*, c.name as companion_name, c.stripe_account_id
+      FROM vault_items vi
+      JOIN companions c ON c.id = vi.companion_id
+      WHERE vi.id = ${vaultItemId}
+      LIMIT 1
+    `;
 
     if (!item) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
     const origin = request.headers.get('origin') || '';
-    const companionStripeId = (item as any).companions?.stripe_account_id;
 
     const checkoutOptions: any = {
       payment_method_types: ['card'],
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
           currency: 'mxn',
           product_data: {
             name: item.title || 'Contenido exclusivo',
-            description: `De ${(item as any).companions?.name || 'Aura'}`,
+            description: `De ${item.companion_name || 'Aura'}`,
           },
           unit_amount: item.price,
         },
@@ -37,13 +38,13 @@ export async function POST(request: NextRequest) {
       mode: 'payment',
       success_url: `${origin}/vault/${item.companion_id}?purchased=${vaultItemId}`,
       cancel_url: `${origin}/vault/${item.companion_id}`,
-      metadata: { userId, vaultItemId, type: 'vault_purchase' },
+      metadata: { userId, vaultItemId, companionId: item.companion_id, type: 'vault_purchase' },
     };
 
-    if (companionStripeId) {
+    if (item.stripe_account_id) {
       checkoutOptions.payment_intent_data = {
         application_fee_amount: Math.round(item.price * 0.20),
-        transfer_data: { destination: companionStripeId },
+        transfer_data: { destination: item.stripe_account_id },
       };
     }
 

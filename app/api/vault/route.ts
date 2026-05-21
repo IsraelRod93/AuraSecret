@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
+import { getDb } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   const companionId = request.nextUrl.searchParams.get('companionId');
@@ -9,30 +9,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'companionId required' }, { status: 400 });
   }
 
-  const db = getSupabase();
+  const sql = getDb();
 
   try {
-    const { data: items, error } = await db
-      .from('vault_items')
-      .select('id, type, title, price, thumbnail_url, description, file_url')
-      .eq('companion_id', companionId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
+    const items = await sql`
+      SELECT id, type, title, price, thumbnail_url, description, file_url
+      FROM vault_items
+      WHERE companion_id = ${companionId}
+      ORDER BY created_at DESC
+    `;
 
     let purchasedIds: string[] = [];
     if (userId) {
-      const { data: purchases } = await db
-        .from('purchases')
-        .select('vault_item_id')
-        .eq('user_id', userId)
-        .eq('status', 'completed');
-
-      purchasedIds = (purchases || []).map(p => p.vault_item_id);
+      const purchases = await sql`
+        SELECT vault_item_id FROM purchases
+        WHERE user_id = ${userId} AND status = 'completed'
+      `;
+      purchasedIds = purchases.map(p => p.vault_item_id);
     }
 
-    const enriched = (items || []).map(item => ({
+    const enriched = items.map(item => ({
       ...item,
       purchased: purchasedIds.includes(item.id),
       file_url: purchasedIds.includes(item.id) ? item.file_url : null,

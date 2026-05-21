@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
-import { getSupabase } from '@/lib/supabase';
+import { getDb } from '@/lib/db';
 import type Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
   const stripe = getStripe();
-  const db = getSupabase();
+  const sql = getDb();
 
   const body = await request.text();
   const sig = request.headers.get('stripe-signature');
@@ -31,31 +31,24 @@ export async function POST(request: NextRequest) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
           const periodEnd = new Date((subscription as any).current_period_end * 1000);
 
-          await db
-            .from('users')
-            .update({
-              subscription_status: 'active',
-              subscription_expires_at: periodEnd.toISOString(),
-            })
-            .eq('id', metadata.userId);
+          await sql`
+            UPDATE users SET subscription_status = 'active', subscription_expires_at = ${periodEnd.toISOString()}
+            WHERE id = ${metadata.userId}::uuid
+          `;
         }
 
         if (metadata.type === 'gallery_unlock') {
-          await db
-            .from('users')
-            .update({ options_unlocked: true })
-            .eq('id', metadata.userId);
+          await sql`
+            UPDATE users SET options_unlocked = true
+            WHERE id = ${metadata.userId}::uuid
+          `;
         }
 
         if (metadata.type === 'vault_purchase') {
-          await db.from('purchases').insert({
-            user_id: metadata.userId,
-            vault_item_id: metadata.vaultItemId,
-            companion_id: session.metadata?.companionId || null,
-            amount: session.amount_total || 0,
-            stripe_payment_id: session.payment_intent as string,
-            status: 'completed',
-          });
+          await sql`
+            INSERT INTO purchases (user_id, vault_item_id, companion_id, amount, stripe_payment_id, status)
+            VALUES (${metadata.userId}::uuid, ${metadata.vaultItemId}::uuid, ${metadata.companionId || null}::uuid, ${session.amount_total || 0}, ${session.payment_intent as string}, 'completed')
+          `;
         }
         break;
       }
@@ -69,10 +62,9 @@ export async function POST(request: NextRequest) {
         const userId = checkoutSessions.data[0]?.metadata?.userId;
 
         if (userId) {
-          await db
-            .from('users')
-            .update({ subscription_status: 'expired' })
-            .eq('id', userId);
+          await sql`
+            UPDATE users SET subscription_status = 'expired' WHERE id = ${userId}::uuid
+          `;
         }
         break;
       }
@@ -87,10 +79,9 @@ export async function POST(request: NextRequest) {
           const userId = checkoutSessions.data[0]?.metadata?.userId;
 
           if (userId) {
-            await db
-              .from('users')
-              .update({ subscription_status: 'expired' })
-              .eq('id', userId);
+            await sql`
+              UPDATE users SET subscription_status = 'expired' WHERE id = ${userId}::uuid
+            `;
           }
         }
         break;

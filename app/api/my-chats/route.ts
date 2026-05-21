@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
+import { getDb } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId');
@@ -7,55 +7,45 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
   }
 
-  const db = getSupabase();
+  const sql = getDb();
 
   try {
-    const { data: conversations } = await db
-      .from('conversations')
-      .select('id, companion_id, message_count, updated_at')
-      .eq('user_id', userId)
-      .gt('message_count', 0)
-      .order('updated_at', { ascending: false });
+    const chats = await sql`
+      SELECT
+        c.companion_id,
+        c.message_count,
+        c.updated_at,
+        comp.name,
+        comp.type,
+        comp.photo_url,
+        (
+          SELECT content FROM messages m
+          WHERE m.conversation_id = c.id
+          ORDER BY m.created_at DESC LIMIT 1
+        ) as last_message,
+        (
+          SELECT role FROM messages m
+          WHERE m.conversation_id = c.id
+          ORDER BY m.created_at DESC LIMIT 1
+        ) as last_message_role
+      FROM conversations c
+      JOIN companions comp ON comp.id = c.companion_id
+      WHERE c.user_id = ${userId} AND c.message_count > 0
+      ORDER BY c.updated_at DESC
+    `;
 
-    if (!conversations || conversations.length === 0) {
-      return NextResponse.json({ chats: [] });
-    }
-
-    const companionIds = conversations.map(c => c.companion_id);
-    const { data: companions } = await db
-      .from('companions')
-      .select('id, name, type, photo_url')
-      .in('id', companionIds);
-
-    const { data: lastMessages } = await db
-      .from('messages')
-      .select('conversation_id, content, role, created_at')
-      .in('conversation_id', conversations.map(c => c.id))
-      .order('created_at', { ascending: false });
-
-    const lastMsgMap = new Map<string, { content: string; role: string }>();
-    for (const msg of lastMessages || []) {
-      if (!lastMsgMap.has(msg.conversation_id)) {
-        lastMsgMap.set(msg.conversation_id, { content: msg.content, role: msg.role });
-      }
-    }
-
-    const chats = conversations.map(conv => {
-      const companion = companions?.find(c => c.id === conv.companion_id);
-      const lastMsg = lastMsgMap.get(conv.id);
-      return {
-        companionId: conv.companion_id,
-        name: companion?.name || 'Desconocida',
-        type: companion?.type || 'ai',
-        photo_url: companion?.photo_url || '',
-        messageCount: conv.message_count,
-        lastMessage: lastMsg?.content || '',
-        lastMessageRole: lastMsg?.role || '',
-        updatedAt: conv.updated_at,
-      };
+    return NextResponse.json({
+      chats: chats.map(c => ({
+        companionId: c.companion_id,
+        name: c.name,
+        type: c.type,
+        photo_url: c.photo_url,
+        messageCount: c.message_count,
+        lastMessage: c.last_message || '',
+        lastMessageRole: c.last_message_role || '',
+        updatedAt: c.updated_at,
+      })),
     });
-
-    return NextResponse.json({ chats });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Failed to load chats';
     return NextResponse.json({ error: msg }, { status: 500 });
