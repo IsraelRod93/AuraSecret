@@ -13,7 +13,7 @@ export function getStripe() {
 
 export const PRICES = {
   SUBSCRIPTION_WEEKLY: 6900,
-  GALLERY_UNLOCK: 900,
+  GALLERY_UNLOCK: 1000,
 } as const;
 
 export const SUBSCRIPTION_INTERVAL: Stripe.Price.Recurring.Interval = 'week';

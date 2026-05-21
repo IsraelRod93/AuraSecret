@@ -309,7 +309,7 @@ export default function GalleryPage() {
         loading={payLoading}
         title="El destino tiene mas para ti"
         description="Desbloquea mas conexiones especiales"
-        price="$9 MXN"
+        price="$10 MXN"
         buttonText="VER MAS OPCIONES"
       />
     </div>
