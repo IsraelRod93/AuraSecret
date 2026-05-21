@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
+export async function POST(request: NextRequest) {
+  const { companionId, type, title, price, fileUrl } = await request.json();
+
+  if (!companionId || !fileUrl) {
+    return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  }
+
+  const sql = getDb();
+
+  try {
+    const [item] = await sql`
+      INSERT INTO vault_items (companion_id, type, title, price, file_url, thumbnail_url)
+      VALUES (${companionId}::uuid, ${type || 'photo'}, ${title || 'Foto exclusiva'}, ${price || 4900}, ${fileUrl}, ${fileUrl})
+      RETURNING *
+    `;
+    return NextResponse.json({ item });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create vault item';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
 export async function GET(request: NextRequest) {
   const companionId = request.nextUrl.searchParams.get('companionId');
   const userId = request.nextUrl.searchParams.get('userId');

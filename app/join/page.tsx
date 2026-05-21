@@ -20,33 +20,38 @@ export default function JoinPage() {
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('49');
-  const [file, setFile] = useState<File | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [vaultPhotos, setVaultPhotos] = useState<File[]>([]);
   const [ageConfirm, setAgeConfirm] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [modelId, setModelId] = useState<string | null>(null);
 
+  const uploadFile = async (file: File): Promise<string> => {
+    const res = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, {
+      method: 'POST',
+      body: file,
+    });
+    const data = await res.json();
+    if (!data.url) throw new Error(data.error || 'Upload failed');
+    return data.url;
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!profilePhoto) return;
     setLoading(true);
 
     try {
-      const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, {
-        method: 'POST',
-        body: file,
-      });
-      const uploadData = await uploadRes.json();
-
-      if (!uploadData.url) throw new Error(uploadData.error || 'Upload failed');
+      const profileUrl = await uploadFile(profilePhoto);
 
       const res = await fetch('/api/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          photo_url: uploadData.url,
+          photo_url: profileUrl,
           price: Number(price),
           age: age ? Number(age) : null,
           location: location || null,
@@ -59,7 +64,26 @@ export default function JoinPage() {
 
       if (data.error) throw new Error(data.error);
 
-      setModelId(data.companion.id);
+      const companionId = data.companion.id;
+
+      if (vaultPhotos.length > 0) {
+        for (const photo of vaultPhotos) {
+          const url = await uploadFile(photo);
+          await fetch('/api/vault', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              companionId,
+              type: 'photo',
+              title: photo.name.replace(/\.[^.]+$/, ''),
+              price: Number(price) * 100,
+              fileUrl: url,
+            }),
+          });
+        }
+      }
+
+      setModelId(companionId);
       setStep(2);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error en el registro');
@@ -225,15 +249,33 @@ export default function JoinPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-primary text-xs flex items-center gap-1">
-              <Camera size={14} /> Tu mejor foto
+              <Camera size={14} /> Foto de perfil (gratis, visible para todos)
             </label>
             <input
               type="file"
               accept="image/*"
               className="text-muted-foreground text-sm"
-              onChange={e => setFile(e.target.files?.[0] || null)}
+              onChange={e => setProfilePhoto(e.target.files?.[0] || null)}
               required
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-primary text-xs flex items-center gap-1">
+              <Camera size={14} /> Fotos para tu baul (de pago, opcional)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="text-muted-foreground text-sm"
+              onChange={e => setVaultPhotos(Array.from(e.target.files || []))}
+            />
+            {vaultPhotos.length > 0 && (
+              <small className="text-muted-foreground text-xs">
+                {vaultPhotos.length} foto{vaultPhotos.length > 1 ? 's' : ''} para tu baul a ${price} MXN c/u
+              </small>
+            )}
           </div>
 
           <div className="flex flex-col gap-3 mt-2">
