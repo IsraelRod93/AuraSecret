@@ -144,7 +144,7 @@ export function AuraChat() {
       </motion.header>
 
       {/* Main content area */}
-      <main className="relative z-10 flex-1 flex flex-col items-center px-4 pb-32">
+      <main className="relative z-10 flex-1 flex flex-col items-center px-4 pb-44">
         <AnimatePresence mode="wait">
           {messages.length <= 1 && (
             <motion.div
@@ -238,7 +238,7 @@ export function AuraChat() {
 
       {/* Input area */}
       <motion.div
-        className="fixed bottom-0 left-0 right-0 z-20 p-4 pb-6"
+        className="fixed bottom-16 left-0 right-0 z-20 p-4 pb-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
