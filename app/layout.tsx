@@ -3,6 +3,7 @@ import Script from 'next/script'
 import { Geist, Geist_Mono, Cormorant_Garamond, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { TelegramProvider } from '@/components/telegram-provider'
+import { BottomNav } from '@/components/bottom-nav'
 import './globals.css'
 
 const geist = Geist({ 
@@ -68,6 +69,7 @@ export default function RootLayout({
       <body className={`${geist.variable} ${geistMono.variable} ${cormorant.variable} ${inter.variable} font-sans antialiased min-h-screen bg-background`}>
         <TelegramProvider>
           {children}
+          <BottomNav />
         </TelegramProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
