@@ -238,7 +238,7 @@ export function AuraChat() {
 
       {/* Input area */}
       <motion.div
-        className="fixed bottom-16 left-0 right-0 z-20 p-4 pb-2"
+        className="fixed bottom-20 left-0 right-0 z-20 p-4 pb-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
