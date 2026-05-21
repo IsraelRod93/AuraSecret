@@ -8,6 +8,17 @@ export async function GET(request: NextRequest) {
   try {
     const db = getSupabase();
 
+    // Diagnostic: test if any table works
+    if (request.nextUrl.searchParams.get('debug') === '1') {
+      const t1 = await db.from('companions').select('id').limit(1);
+      const t2 = await db.from('users').select('id').limit(1);
+      return NextResponse.json({
+        companions_result: { data: t1.data, error: t1.error },
+        users_result: { data: t2.data, error: t2.error },
+        supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30) + '...',
+      });
+    }
+
     if (sessionId) {
       const { data: existing } = await db
         .from('user_gallery_views')
