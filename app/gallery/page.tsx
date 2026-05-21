@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { X, Heart, Sparkles, MessageCircle } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
@@ -18,8 +18,17 @@ interface Companion {
   description: string | null;
 }
 
-export default function GalleryPage() {
+export default function GalleryPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <GalleryPage />
+    </Suspense>
+  );
+}
+
+function GalleryPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { appUser } = useTelegram();
   const [companions, setCompanions] = useState<Companion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -38,6 +47,7 @@ export default function GalleryPage() {
     try {
       const params = new URLSearchParams();
       if (appUser?.id) params.set('userId', appUser.id);
+      if (searchParams.get('filtered') === 'true') params.set('filtered', 'true');
       const res = await fetch(`/api/companions?${params}`);
       const data = await res.json();
       const all = data.batches?.flat() || [];

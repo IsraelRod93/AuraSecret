@@ -13,7 +13,7 @@ const MESSAGES: Record<string, { title: string; subtitle: string }> = {
   },
   gallery: {
     title: "Desbloqueado!",
-    subtitle: "Nuevas conexiones te esperan",
+    subtitle: "Aura te ayudara a encontrar tu conexion ideal",
   },
   vault: {
     title: "Compra exitosa!",
@@ -25,7 +25,9 @@ function PaymentContent() {
   const params = useSearchParams();
   const type = params.get("type") || "subscription";
   const msg = MESSAGES[type] || MESSAGES.subscription;
+  const isGallery = type === 'gallery';
   const botUrl = "https://t.me/AuraSecretx_bot";
+  const nextUrl = isGallery ? "/preferences" : botUrl;
 
   return (
     <div className="min-h-screen bg-background relative flex items-center justify-center">
@@ -48,12 +50,12 @@ function PaymentContent() {
         <p className="text-muted-foreground mb-8">{msg.subtitle}</p>
 
         <motion.a
-          href={botUrl}
+          href={nextUrl}
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-xl font-bold text-lg"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          Volver a Aura <ArrowRight className="w-5 h-5" />
+          {isGallery ? 'Dile a Aura que buscas' : 'Volver a Aura'} <ArrowRight className="w-5 h-5" />
         </motion.a>
 
         <motion.div
