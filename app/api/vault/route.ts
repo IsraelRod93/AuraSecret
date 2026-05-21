@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
-  const { companionId, type, title, price, fileUrl } = await request.json();
+  const { companionId, type, title, price, fileUrl, groupName } = await request.json();
 
   if (!companionId || !fileUrl) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const [item] = await sql`
-      INSERT INTO vault_items (companion_id, type, title, price, file_url, thumbnail_url)
-      VALUES (${companionId}::uuid, ${type || 'photo'}, ${title || 'Foto exclusiva'}, ${price || 4900}, ${fileUrl}, ${fileUrl})
+      INSERT INTO vault_items (companion_id, type, title, price, file_url, thumbnail_url, group_name)
+      VALUES (${companionId}::uuid, ${type || 'photo'}, ${title || 'Foto exclusiva'}, ${price || 4900}, ${fileUrl}, ${fileUrl}, ${groupName || null})
       RETURNING *
     `;
     return NextResponse.json({ item });
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const items = await sql`
-      SELECT id, type, title, price, thumbnail_url, description, file_url
+      SELECT id, type, title, price, thumbnail_url, description, file_url, group_name
       FROM vault_items
       WHERE companion_id = ${companionId}
       ORDER BY created_at DESC
