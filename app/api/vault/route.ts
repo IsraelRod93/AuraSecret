@@ -23,6 +23,49 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  const { itemId, price, title, groupName } = await request.json();
+
+  if (!itemId) {
+    return NextResponse.json({ error: 'itemId required' }, { status: 400 });
+  }
+
+  const sql = getDb();
+
+  try {
+    const [item] = await sql`
+      UPDATE vault_items SET
+        price = COALESCE(${price ?? null}, price),
+        title = COALESCE(${title ?? null}, title),
+        group_name = ${groupName !== undefined ? groupName : null}
+      WHERE id = ${itemId}::uuid
+      RETURNING *
+    `;
+    return NextResponse.json({ item });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const { itemId } = await request.json();
+
+  if (!itemId) {
+    return NextResponse.json({ error: 'itemId required' }, { status: 400 });
+  }
+
+  const sql = getDb();
+
+  try {
+    await sql`DELETE FROM vault_items WHERE id = ${itemId}::uuid`;
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to delete';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
 export async function GET(request: NextRequest) {
   const companionId = request.nextUrl.searchParams.get('companionId');
   const userId = request.nextUrl.searchParams.get('userId');

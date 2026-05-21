@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
       refresh_url: `${origin}/join?error=retry`,
-      return_url: `${origin}/join?success=true`,
+      return_url: `${origin}/dashboard/${modelId}`,
       type: 'account_onboarding',
     });
 
