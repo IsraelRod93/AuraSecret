@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ batches, sessionId: newSessionId });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch companions';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message, detail: String(error) }, { status: 500 });
   }
 }
