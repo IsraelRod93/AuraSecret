@@ -3,10 +3,12 @@ export function openPaymentLink(url: string) {
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.openLink) {
       tg.openLink(url);
-    } else {
+    } else if (tg?.openTelegramLink) {
       window.open(url, '_blank');
+    } else {
+      window.location.href = url;
     }
   } catch {
-    window.open(url, '_blank');
+    window.location.href = url;
   }
 }

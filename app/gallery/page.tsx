@@ -78,12 +78,16 @@ export default function GalleryPage() {
       const res = await fetch('/api/gallery-unlock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: appUser?.id }),
+        body: JSON.stringify({ userId: appUser?.id || 'anonymous' }),
       });
       const data = await res.json();
-      if (data.url) openPaymentLink(data.url);
-    } catch {
-      // ignore
+      if (data.url) {
+        openPaymentLink(data.url);
+      } else {
+        alert(data.error || 'Error al procesar el pago');
+      }
+    } catch (e) {
+      alert('Error de conexion. Intenta de nuevo.');
     } finally {
       setPayLoading(false);
     }
