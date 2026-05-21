@@ -3,11 +3,6 @@ import { put } from '@vercel/blob';
 
 export async function POST(request: NextRequest) {
   const filename = request.nextUrl.searchParams.get('filename');
-  const password = request.headers.get('x-admin-password');
-
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   if (!filename) {
     return NextResponse.json({ error: 'Filename is required' }, { status: 400 });

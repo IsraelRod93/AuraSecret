@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import { User, Camera, DollarSign, Sparkles } from 'lucide-react';
 
 export default function JoinPage() {
@@ -20,27 +19,25 @@ export default function JoinPage() {
     try {
       const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, {
         method: 'POST',
-        headers: { 'x-admin-password': process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '' },
         body: file,
       });
       const uploadData = await uploadRes.json();
 
-      const { data, error } = await getSupabaseBrowser().from('companions').insert([
-        {
-          name,
-          type: 'human',
-          photo_url: uploadData.url,
-          status: 'pending',
-          description: `Modelo ${name}`,
-          tagline: 'Nueva en Aura',
-        }
-      ]).select();
+      if (!uploadData.url) throw new Error(uploadData.error || 'Upload failed');
 
-      if (error) throw error;
-      setModelId(data[0].id);
+      const res = await fetch('/api/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, photo_url: uploadData.url, price: Number(price) }),
+      });
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      setModelId(data.companion.id);
       setStep(2);
-    } catch {
-      alert('Error en el registro');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error en el registro');
     } finally {
       setLoading(false);
     }
@@ -56,14 +53,17 @@ export default function JoinPage() {
       });
       const data = await res.json();
 
-      await getSupabaseBrowser()
-        .from('companions')
-        .update({ stripe_account_id: data.accountId, status: 'active' })
-        .eq('id', modelId);
+      if (data.error) throw new Error(data.error);
+
+      await fetch('/api/join', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companionId: modelId, stripe_account_id: data.accountId }),
+      });
 
       window.location.href = data.url;
-    } catch {
-      alert('Error conectando con Stripe');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error conectando con Stripe');
     } finally {
       setLoading(false);
     }
