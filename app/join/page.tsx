@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { User, Camera, DollarSign, Sparkles, MapPin, Calendar, Heart } from 'lucide-react';
+import { User, Camera, Sparkles, MapPin, Calendar, Heart } from 'lucide-react';
 
 const PERSONALITY_OPTIONS = [
   { value: 'romantica', label: 'Romantica' },
@@ -19,24 +19,12 @@ export default function JoinPage() {
   const [personality, setPersonality] = useState('');
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('49');
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
-  const [vaultPhotos, setVaultPhotos] = useState<File[]>([]);
   const [ageConfirm, setAgeConfirm] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
   const [modelId, setModelId] = useState<string | null>(null);
-
-  const uploadFile = async (file: File): Promise<string> => {
-    const res = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, {
-      method: 'POST',
-      body: file,
-    });
-    const data = await res.json();
-    if (!data.url) throw new Error(data.error || 'Upload failed');
-    return data.url;
-  };
+  const [done, setDone] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,15 +32,19 @@ export default function JoinPage() {
     setLoading(true);
 
     try {
-      const profileUrl = await uploadFile(profilePhoto);
+      const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(profilePhoto.name)}`, {
+        method: 'POST',
+        body: profilePhoto,
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.url) throw new Error(uploadData.error || 'Upload failed');
 
       const res = await fetch('/api/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          photo_url: profileUrl,
-          price: Number(price),
+          photo_url: uploadData.url,
           age: age ? Number(age) : null,
           location: location || null,
           personality_type: personality || null,
@@ -64,27 +56,8 @@ export default function JoinPage() {
 
       if (data.error) throw new Error(data.error);
 
-      const companionId = data.companion.id;
-
-      if (vaultPhotos.length > 0) {
-        for (const photo of vaultPhotos) {
-          const url = await uploadFile(photo);
-          await fetch('/api/vault', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              companionId,
-              type: 'photo',
-              title: photo.name.replace(/\.[^.]+$/, ''),
-              price: Number(price) * 100,
-              fileUrl: url,
-            }),
-          });
-        }
-      }
-
-      setModelId(companionId);
-      setStep(2);
+      setModelId(data.companion.id);
+      setDone(true);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error en el registro');
     } finally {
@@ -92,48 +65,21 @@ export default function JoinPage() {
     }
   };
 
-  const handleStripeConnect = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/stripe-onboarding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ modelId }),
-      });
-      const data = await res.json();
-
-      if (data.error) throw new Error(data.error);
-
-      await fetch('/api/join', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companionId: modelId, stripe_account_id: data.accountId }),
-      });
-
-      window.location.href = data.url;
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error conectando con Stripe');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (step === 2) {
+  if (done && modelId) {
     return (
       <div className="bg-background min-h-screen flex items-center justify-center font-serif p-5">
         <div className="bg-card p-10 rounded-2xl border-2 border-primary max-w-md w-full text-center">
           <Sparkles className="text-primary mx-auto" size={48} />
-          <h2 className="text-primary mt-4 mb-2">Casi lista!</h2>
-          <p className="text-muted-foreground text-sm mb-8">
-            Para recibir tus pagos (80% para ti), necesitamos vincular tu cuenta bancaria a traves de Stripe.
+          <h2 className="text-primary mt-4 mb-2">Perfil creado!</h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            Ya estas en Aura. Desde tu dashboard puedes subir fotos, configurar precios y ver tus ventas.
           </p>
-          <button
-            className="bg-primary text-primary-foreground w-full p-4 rounded-lg font-bold cursor-pointer disabled:opacity-50"
-            onClick={handleStripeConnect}
-            disabled={loading}
+          <a
+            href={`/dashboard/${modelId}`}
+            className="block bg-primary text-primary-foreground w-full p-4 rounded-lg font-bold"
           >
-            {loading ? 'Conectando...' : 'VINCULAR MI BANCO'}
-          </button>
+            IR A MI DASHBOARD
+          </a>
         </div>
       </div>
     );
@@ -143,7 +89,7 @@ export default function JoinPage() {
     <div className="bg-background min-h-screen flex items-center justify-center font-serif p-5">
       <div className="bg-card p-8 rounded-2xl border-2 border-primary max-w-md w-full text-center">
         <h2 className="text-primary mb-2">Unete a AURA</h2>
-        <p className="text-muted-foreground text-sm mb-6">Gana dinero como companera en Aura</p>
+        <p className="text-muted-foreground text-sm mb-6">Crea tu perfil y empieza a ganar</p>
 
         <form onSubmit={handleRegister} className="flex flex-col gap-4 text-left">
           <div className="flex flex-col gap-1.5">
@@ -235,21 +181,7 @@ export default function JoinPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-primary text-xs flex items-center gap-1">
-              <DollarSign size={14} /> Precio base por contenido (MXN)
-            </label>
-            <input
-              type="number"
-              className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              required
-            />
-            <small className="text-primary text-xs">Tu recibes el 80% de cada venta.</small>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-primary text-xs flex items-center gap-1">
-              <Camera size={14} /> Foto de perfil (gratis, visible para todos)
+              <Camera size={14} /> Foto de perfil
             </label>
             <input
               type="file"
@@ -258,24 +190,7 @@ export default function JoinPage() {
               onChange={e => setProfilePhoto(e.target.files?.[0] || null)}
               required
             />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-primary text-xs flex items-center gap-1">
-              <Camera size={14} /> Fotos para tu baul (de pago, opcional)
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              className="text-muted-foreground text-sm"
-              onChange={e => setVaultPhotos(Array.from(e.target.files || []))}
-            />
-            {vaultPhotos.length > 0 && (
-              <small className="text-muted-foreground text-xs">
-                {vaultPhotos.length} foto{vaultPhotos.length > 1 ? 's' : ''} para tu baul a ${price} MXN c/u
-              </small>
-            )}
+            <small className="text-muted-foreground text-xs">Esta foto sera visible en la galeria. Podras subir mas fotos desde tu dashboard.</small>
           </div>
 
           <div className="flex flex-col gap-3 mt-2">
@@ -307,7 +222,7 @@ export default function JoinPage() {
             className="bg-primary text-primary-foreground p-4 rounded-lg font-bold cursor-pointer mt-2 disabled:opacity-50"
             disabled={loading || !ageConfirm || !termsAccepted}
           >
-            {loading ? 'Procesando...' : 'CREAR MI PERFIL'}
+            {loading ? 'Creando perfil...' : 'CREAR MI PERFIL'}
           </button>
         </form>
       </div>
