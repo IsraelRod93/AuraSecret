@@ -37,21 +37,28 @@ export default function CompanionChatPage({ params }: { params: Promise<{ compan
   }, [appUser]);
 
   useEffect(() => {
-    loadCompanion();
-  }, [companionId]);
+    if (appUser?.id) loadChat();
+  }, [companionId, appUser]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const loadCompanion = async () => {
+  const loadChat = async () => {
     try {
-      const params = new URLSearchParams({ userId: appUser?.id || '' });
-      const res = await fetch(`/api/companions?${params}`);
+      const params = new URLSearchParams({ companionId, userId: appUser?.id || '' });
+      const res = await fetch(`/api/companion-chat?${params}`);
       const data = await res.json();
-      const all = data.batches?.flat() || [];
-      const found = all.find((c: { id: string }) => c.id === companionId);
-      if (found) setCompanion(found);
+      if (data.companion) setCompanion(data.companion);
+      if (data.messagesUsed) setMessagesUsed(data.messagesUsed);
+      if (data.isSubscribed) setIsSubscribed(true);
+      if (data.messages?.length) {
+        setMessages(data.messages.map((m: { role: string; content: string }, i: number) => ({
+          id: `hist-${i}`,
+          role: m.role as 'user' | 'companion',
+          content: m.content,
+        })));
+      }
     } catch {
       // ignore
     }

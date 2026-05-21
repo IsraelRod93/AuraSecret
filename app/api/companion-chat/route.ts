@@ -4,6 +4,62 @@ import { callGroq } from '@/lib/groq';
 
 const FREE_MESSAGE_LIMIT = 7;
 
+export async function GET(request: NextRequest) {
+  const companionId = request.nextUrl.searchParams.get('companionId');
+  const userId = request.nextUrl.searchParams.get('userId');
+
+  if (!companionId || !userId) {
+    return NextResponse.json({ error: 'Missing params' }, { status: 400 });
+  }
+
+  const db = getSupabase();
+
+  try {
+    const { data: companion } = await db
+      .from('companions')
+      .select('id, name, type, photo_url, tagline, description')
+      .eq('id', companionId)
+      .single();
+
+    const { data: conversation } = await db
+      .from('conversations')
+      .select('id, message_count')
+      .eq('user_id', userId)
+      .eq('companion_id', companionId)
+      .single();
+
+    let messages: { role: string; content: string; created_at: string }[] = [];
+    if (conversation) {
+      const { data } = await db
+        .from('messages')
+        .select('role, content, created_at')
+        .eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: true });
+      messages = data || [];
+    }
+
+    const { data: user } = await db
+      .from('users')
+      .select('subscription_status, subscription_expires_at')
+      .eq('id', userId)
+      .single();
+
+    const isSubscribed = user?.subscription_status === 'active' &&
+      user?.subscription_expires_at &&
+      new Date(user.subscription_expires_at) > new Date();
+
+    return NextResponse.json({
+      companion,
+      messages,
+      messagesUsed: conversation?.message_count || 0,
+      isSubscribed,
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Failed to load chat';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   const { companionId, message, userId } = await request.json();
 
