@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import { Geist, Geist_Mono, Cormorant_Garamond, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { TelegramProvider } from '@/components/telegram-provider'
 import './globals.css'
 
 const geist = Geist({ 
@@ -56,8 +58,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="dark bg-background">
+      <head>
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </head>
       <body className={`${geist.variable} ${geistMono.variable} ${cormorant.variable} ${inter.variable} font-sans antialiased min-h-screen bg-background`}>
-        {children}
+        <TelegramProvider>
+          {children}
+        </TelegramProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

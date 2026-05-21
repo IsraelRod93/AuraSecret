@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { OracleOrb } from "@/components/oracle-orb";
+import { useTelegram } from "@/components/telegram-provider";
 
 interface Message {
   id: string;
@@ -12,22 +14,17 @@ interface Message {
   content: string;
 }
 
-const INITIAL_MESSAGE = "Dime tu nombre y signo para revelar tu destino...";
-
-const ORACLE_RESPONSES = [
-  "Las estrellas susurran secretos sobre tu camino... Veo una luz brillante en tu futuro cercano.",
-  "Tu energía es única y poderosa. El universo tiene grandes planes para ti.",
-  "Siento que cargas un peso en tu corazón. Déjame ayudarte a encontrar la paz que buscas.",
-  "Los astros se alinean a tu favor. Este es un momento de transformación profunda.",
-  "Tu intuición es tu mayor guía. Confía en ella, pues el cosmos te habla a través de tus sentimientos.",
-];
+const INITIAL_MESSAGE = "Hola... siento tu energia desde aqui. Dime, como te llamas?";
 
 export function AuraChat() {
+  const router = useRouter();
+  const { appUser } = useTelegram();
   const [messages, setMessages] = useState<Message[]>([
     { id: "1", role: "oracle", content: INITIAL_MESSAGE },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [showGalleryTransition, setShowGalleryTransition] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -51,31 +48,40 @@ export function AuraChat() {
     setInput("");
     setIsTyping(true);
 
-    // Call our actual API
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: [...messages, userMessage].map(m => ({ 
-            role: m.role === 'user' ? 'user' : 'model', 
-            content: m.content 
-          })) 
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content,
+          })),
         }),
       });
 
       const data = await response.json();
-      console.log("API Response:", data);
-      
+
       const oracleMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "oracle",
-        content: data.reply || data.error || "El oráculo está meditando...",
+        content: data.reply || "Dejame pensar...",
       };
-      
+
       setMessages((prev) => [...prev, oracleMessage]);
-    } catch (err) {
-      setMessages((prev) => [...prev, { id: Date.now().toString(), role: "oracle", content: "Error de conexión." }]);
+
+      if (data.action === 'show_gallery') {
+        setTimeout(() => {
+          setShowGalleryTransition(true);
+          setTimeout(() => router.push('/gallery'), 2000);
+        }, 1500);
+      }
+    } catch {
+      setMessages((prev) => [...prev, {
+        id: Date.now().toString(),
+        role: "oracle",
+        content: "Hmm, parece que las estrellas se desalinearon. Intentalo de nuevo.",
+      }]);
     } finally {
       setIsTyping(false);
     }
@@ -91,6 +97,30 @@ export function AuraChat() {
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden">
       <CelestialBackground />
+
+      {/* Gallery transition overlay */}
+      <AnimatePresence>
+        {showGalleryTransition && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="text-center"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Sparkles className="w-12 h-12 text-primary mx-auto mb-4 animate-pulse" />
+              <p className="font-serif text-2xl text-foreground italic">
+                Preparando algo especial para ti...
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <motion.header
@@ -108,14 +138,13 @@ export function AuraChat() {
             AURA
           </h1>
           <p className="font-serif text-lg md:text-xl text-muted-foreground tracking-[0.15em] mt-2 italic">
-            Tu Oráculo Personal
+            {appUser?.first_name ? `Bienvenido, ${appUser.first_name}` : 'Tu conexion secreta'}
           </p>
         </motion.div>
       </motion.header>
 
       {/* Main content area */}
       <main className="relative z-10 flex-1 flex flex-col items-center px-4 pb-32">
-        {/* Oracle Orb - shows when no conversation */}
         <AnimatePresence mode="wait">
           {messages.length <= 1 && (
             <motion.div
@@ -130,7 +159,6 @@ export function AuraChat() {
           )}
         </AnimatePresence>
 
-        {/* Messages */}
         <div className="w-full max-w-2xl space-y-6 mt-4">
           <AnimatePresence mode="popLayout">
             {messages.map((message, index) => (
@@ -167,7 +195,6 @@ export function AuraChat() {
             ))}
           </AnimatePresence>
 
-          {/* Typing indicator */}
           <AnimatePresence>
             {isTyping && (
               <motion.div
@@ -180,7 +207,7 @@ export function AuraChat() {
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary animate-pulse" />
                     <span className="text-sm text-muted-foreground">
-                      AURA está consultando los astros
+                      Aura esta escribiendo
                     </span>
                     <motion.div className="flex gap-1">
                       {[0, 1, 2].map((i) => (
@@ -223,15 +250,15 @@ export function AuraChat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Comparte tus pensamientos con el oráculo..."
+                placeholder="Escribe algo..."
                 className="w-full bg-transparent border-none outline-none resize-none text-foreground placeholder:text-muted-foreground px-4 py-3 font-serif text-lg min-h-[52px] max-h-32"
                 rows={1}
-                disabled={isTyping}
+                disabled={isTyping || showGalleryTransition}
               />
             </div>
             <motion.button
               onClick={handleSend}
-              disabled={!input.trim() || isTyping}
+              disabled={!input.trim() || isTyping || showGalleryTransition}
               className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/80 hover:bg-primary text-primary-foreground flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -239,16 +266,6 @@ export function AuraChat() {
               <Send className="w-5 h-5" />
             </motion.button>
           </div>
-
-          {/* Mystical hint */}
-          <motion.p
-            className="text-center text-xs text-muted-foreground mt-3 font-serif italic"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-          >
-            Las estrellas guardan tus secretos con discreción absoluta ✦
-          </motion.p>
         </div>
       </motion.div>
     </div>

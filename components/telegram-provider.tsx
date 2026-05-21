@@ -1,0 +1,139 @@
+"use client";
+
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+
+interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+}
+
+interface AppUser {
+  id: string;
+  telegram_id: number;
+  username: string | null;
+  first_name: string | null;
+  subscription_status: 'free' | 'active' | 'expired';
+  subscription_expires_at: string | null;
+  options_unlocked: boolean;
+}
+
+interface TelegramContextValue {
+  telegramUser: TelegramUser | null;
+  appUser: AppUser | null;
+  isLoading: boolean;
+  isInTelegram: boolean;
+  refreshUser: () => Promise<void>;
+}
+
+const TelegramContext = createContext<TelegramContextValue>({
+  telegramUser: null,
+  appUser: null,
+  isLoading: true,
+  isInTelegram: false,
+  refreshUser: async () => {},
+});
+
+export function useTelegram() {
+  return useContext(TelegramContext);
+}
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        initData: string;
+        initDataUnsafe: {
+          user?: TelegramUser;
+        };
+        ready: () => void;
+        expand: () => void;
+        setHeaderColor: (color: string) => void;
+        setBackgroundColor: (color: string) => void;
+        MainButton: {
+          show: () => void;
+          hide: () => void;
+          setText: (text: string) => void;
+          onClick: (cb: () => void) => void;
+        };
+        HapticFeedback: {
+          impactOccurred: (style: string) => void;
+          notificationOccurred: (type: string) => void;
+        };
+      };
+    };
+  }
+}
+
+export function TelegramProvider({ children }: { children: ReactNode }) {
+  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInTelegram, setIsInTelegram] = useState(false);
+
+  const authenticate = async () => {
+    try {
+      const tg = window.Telegram?.WebApp;
+      if (!tg || !tg.initData) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsInTelegram(true);
+      tg.ready();
+      tg.expand();
+      tg.setHeaderColor('#050507');
+      tg.setBackgroundColor('#050507');
+
+      if (tg.initDataUnsafe.user) {
+        setTelegramUser(tg.initDataUnsafe.user);
+      }
+
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData: tg.initData }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setAppUser(data.user);
+      }
+    } catch {
+      // Silent fail — app works without auth for non-Telegram access
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshUser = async () => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg?.initData) return;
+
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData: tg.initData }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppUser(data.user);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    authenticate();
+  }, []);
+
+  return (
+    <TelegramContext.Provider value={{ telegramUser, appUser, isLoading, isInTelegram, refreshUser }}>
+      {children}
+    </TelegramContext.Provider>
+  );
+}
