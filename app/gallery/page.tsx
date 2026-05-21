@@ -57,6 +57,13 @@ export default function GalleryPage() {
 
     if (swipeDir === 'right' && liked.length < 2) {
       setLiked(prev => [...prev, current]);
+      if (appUser?.id) {
+        fetch('/api/like', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: appUser.id, companionId: current.id }),
+        }).catch(() => {});
+      }
       setTimeout(() => {
         setShowMatch(current);
       }, 400);

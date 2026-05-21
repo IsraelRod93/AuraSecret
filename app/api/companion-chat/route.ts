@@ -127,6 +127,10 @@ export async function POST(request: NextRequest) {
 
     const newCount = conversation.message_count + 1;
     await sql`
+      UPDATE user_likes SET messaged = true
+      WHERE user_id = ${userId}::uuid AND companion_id = ${companionId}::uuid
+    `.catch(() => {});
+    await sql`
       UPDATE conversations SET message_count = ${newCount}, updated_at = NOW()
       WHERE id = ${conversation.id}
     `;
