@@ -7,6 +7,7 @@ import { Send, Sparkles, ArrowLeft, Lock, ShoppingBag } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { SubscriptionModal } from "@/components/subscription-modal";
 import { useTelegram } from "@/components/telegram-provider";
+import { openPaymentLink } from "@/lib/open-payment";
 
 interface Message {
   id: string;
@@ -143,7 +144,7 @@ export default function CompanionChatPage({ params }: { params: Promise<{ compan
         body: JSON.stringify({ userId: appUser?.id }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) openPaymentLink(data.url);
     } catch {
       // ignore
     } finally {

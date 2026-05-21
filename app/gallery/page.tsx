@@ -7,6 +7,7 @@ import { X, Heart, Sparkles, MessageCircle } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { PaywallModal } from "@/components/paywall-modal";
 import { useTelegram } from "@/components/telegram-provider";
+import { openPaymentLink } from "@/lib/open-payment";
 
 interface Companion {
   id: string;
@@ -80,7 +81,7 @@ export default function GalleryPage() {
         body: JSON.stringify({ userId: appUser?.id }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) openPaymentLink(data.url);
     } catch {
       // ignore
     } finally {
@@ -304,7 +305,7 @@ export default function GalleryPage() {
         loading={payLoading}
         title="El destino tiene mas para ti"
         description="Desbloquea mas conexiones especiales"
-        price="$15 MXN"
+        price="$9 MXN"
         buttonText="VER MAS OPCIONES"
       />
     </div>

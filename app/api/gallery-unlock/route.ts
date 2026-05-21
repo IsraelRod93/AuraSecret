@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getStripe } from '@/lib/stripe';
+import { getStripe, PRICES } from '@/lib/stripe';
 
 export async function POST(request: NextRequest) {
   const { userId } = await request.json();
   const stripe = getStripe();
 
   try {
-    const origin = request.headers.get('origin') || '';
+    const origin = request.headers.get('origin') || 'https://aura-secret.vercel.app';
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -16,12 +16,12 @@ export async function POST(request: NextRequest) {
             name: 'Mas opciones - Aura',
             description: 'Desbloquea mas conexiones especiales',
           },
-          unit_amount: 1500,
+          unit_amount: PRICES.GALLERY_UNLOCK,
         },
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${origin}/gallery?unlocked=true`,
+      success_url: `${origin}/payment-success?type=gallery`,
       cancel_url: `${origin}/gallery`,
       metadata: { userId, type: 'gallery_unlock' },
     });

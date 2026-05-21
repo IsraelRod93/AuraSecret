@@ -21,7 +21,7 @@ export function PaywallModal({
   loading,
   title = "El destino tiene mas para ti",
   description = "Desbloquea mas conexiones especiales",
-  price = "$15 MXN",
+  price = "$9 MXN",
   buttonText = "DESBLOQUEAR",
 }: PaywallModalProps) {
   return (

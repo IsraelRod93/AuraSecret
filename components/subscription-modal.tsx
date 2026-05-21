@@ -59,7 +59,7 @@ export function SubscriptionModal({ open, onClose, onSubscribe, loading, compani
               </div>
             </div>
 
-            <div className="text-3xl font-bold text-primary mb-1">$79 MXN</div>
+            <div className="text-3xl font-bold text-primary mb-1">$69 MXN</div>
             <p className="text-muted-foreground text-xs mb-6">por semana • cancela cuando quieras</p>
 
             <button

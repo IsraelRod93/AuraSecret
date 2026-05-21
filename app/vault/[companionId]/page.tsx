@@ -7,6 +7,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { VaultGrid } from "@/components/vault-grid";
 import { useTelegram } from "@/components/telegram-provider";
+import { openPaymentLink } from "@/lib/open-payment";
 
 interface VaultItem {
   id: string;
@@ -58,7 +59,7 @@ export default function VaultPage({ params }: { params: Promise<{ companionId: s
         body: JSON.stringify({ userId: appUser.id, vaultItemId: itemId }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) openPaymentLink(data.url);
     } catch {
       // ignore
     } finally {

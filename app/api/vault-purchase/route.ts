@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${origin}/vault/${item.companion_id}?purchased=${vaultItemId}`,
+      success_url: `${origin}/payment-success?type=vault`,
       cancel_url: `${origin}/vault/${item.companion_id}`,
       metadata: { userId, vaultItemId, companionId: item.companion_id, type: 'vault_purchase' },
     };

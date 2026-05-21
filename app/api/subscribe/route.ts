@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getStripe } from '@/lib/stripe';
+import { getStripe, PRICES } from '@/lib/stripe';
 
 export async function POST(request: NextRequest) {
   const { userId } = await request.json();
   const stripe = getStripe();
 
   try {
-    const origin = request.headers.get('origin') || '';
+    const origin = request.headers.get('origin') || 'https://aura-secret.vercel.app';
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -17,13 +17,13 @@ export async function POST(request: NextRequest) {
             name: 'AuraSecret Premium',
             description: 'Mensajes ilimitados con todas tus conexiones',
           },
-          unit_amount: 7900,
+          unit_amount: PRICES.SUBSCRIPTION_WEEKLY,
           recurring: { interval: 'week' },
         },
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `${origin}/gallery?subscribed=true`,
+      success_url: `${origin}/payment-success?type=subscription`,
       cancel_url: `${origin}/gallery`,
       metadata: { userId, type: 'subscription' },
     });
