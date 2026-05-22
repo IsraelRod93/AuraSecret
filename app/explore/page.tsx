@@ -76,7 +76,7 @@ export default function ExplorePage() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <CelestialBackground />
 
-      <div className="relative z-10 px-4 pt-[76px] pb-[100px] overflow-y-auto min-h-screen no-scrollbar">
+      <div className="relative z-10 page-content-inset pb-[100px] overflow-y-auto min-h-screen no-scrollbar">
         <div className="mb-[18px]">
           <h1 className="font-serif text-[26px] text-foreground">Explorar</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Novedades de tus favoritas</p>

@@ -131,12 +131,15 @@ export function AuraChat() {
 
       {/* Header */}
       <motion.header
-        className="relative z-10 pt-8 pb-4 text-center"
+        className="relative z-10 page-top-inset pb-4 text-center"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        <div className="absolute left-4 top-8 pt-safe">
+        <div
+          className="absolute top-0 pt-safe"
+          style={{ left: "calc(16px + var(--tg-content-safe-left, 0px))" }}
+        >
           <button
             onClick={handleLogout}
             className="p-2 rounded-xl bg-white/5 border border-white/10 text-fg-muted hover:text-white transition-colors"

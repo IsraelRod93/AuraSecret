@@ -78,8 +78,8 @@ export default function VaultPage({ params }: { params: Promise<{ companionId: s
           className="flex items-center gap-3 px-4 pb-3 border-b border-border/30"
           style={{
             paddingTop: isInTelegram
-              ? "calc(var(--header-offset-top) + 40px)"
-              : "calc(var(--header-offset-top) + 52px)",
+              ? "calc(var(--header-offset-top) + 38px)"
+              : "calc(var(--header-offset-top) + 50px)",
             paddingLeft: isInTelegram
               ? "calc(16px + var(--tg-content-safe-left, 18px))"
               : undefined,

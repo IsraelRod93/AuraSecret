@@ -89,7 +89,7 @@ export default function PanelDashboard() {
       <CelestialBackground />
 
       {/* Header */}
-      <div className="relative z-10 px-4 pt-[76px] pb-3">
+      <div className="relative z-10 px-4 page-top-inset pb-3">
         <div className="max-w-lg mx-auto flex items-center gap-3">
           <img
             src={companion.photo_url}

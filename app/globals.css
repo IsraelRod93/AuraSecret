@@ -433,6 +433,25 @@ html[data-tg="1"] {
   );
 }
 
+/* Margen superior bajo la X de Telegram (tabs y títulos) */
+.page-top-inset {
+  padding-top: calc(var(--header-offset-top) + 50px);
+}
+html[data-tg="1"] .page-top-inset {
+  padding-top: calc(var(--header-offset-top) + 38px);
+}
+
+.page-content-inset {
+  padding-top: calc(var(--header-offset-top) + 50px);
+  padding-left: 16px;
+  padding-right: 16px;
+}
+html[data-tg="1"] .page-content-inset {
+  padding-top: calc(var(--header-offset-top) + 38px);
+  padding-left: calc(16px + var(--tg-content-safe-left, 18px));
+  padding-right: 16px;
+}
+
 /* Safe area utilities */
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);

@@ -19,7 +19,7 @@ interface ChatPreview {
 
 export default function MyChatsPage() {
   const router = useRouter();
-  const { appUser, isInTelegram } = useTelegram();
+  const { appUser } = useTelegram();
   const [chats, setChats] = useState<ChatPreview[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,18 +54,7 @@ export default function MyChatsPage() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <CelestialBackground />
 
-      <div
-        className="relative z-10 px-4 pb-[100px] overflow-y-auto min-h-screen no-scrollbar"
-        style={{
-          paddingTop: isInTelegram
-            ? "calc(var(--header-offset-top) + 40px)"
-            : "calc(var(--header-offset-top) + 52px)",
-          paddingLeft: isInTelegram
-            ? "calc(16px + var(--tg-content-safe-left, 18px))"
-            : "16px",
-          paddingRight: "16px",
-        }}
-      >
+      <div className="relative z-10 page-content-inset pb-[100px] overflow-y-auto min-h-screen no-scrollbar">
         <div className="mb-4">
           <h1 className="font-serif text-[26px] text-foreground">Tus conversaciones</h1>
           <p className="text-xs text-muted-foreground mt-0.5">

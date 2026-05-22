@@ -164,7 +164,7 @@ function GalleryPage() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <CelestialBackground />
 
-      <div className="relative z-10 flex flex-col px-4 pt-[52px] pb-[100px] min-h-screen">
+      <div className="relative z-10 flex flex-col page-content-inset pb-[100px] min-h-screen">
         {/* Header */}
         <div className="text-center mb-3.5">
           <h1 className="font-serif text-[26px] gradient-text tracking-wide">Descubre</h1>
