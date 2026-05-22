@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    console.log('Attempting to insert companion:', { name, email, photo_url });
     const [companion] = await sql`
       INSERT INTO companions (name, type, photo_url, status, email, password_hash, description, tagline, age, location, personality_type)
       VALUES (
@@ -41,12 +42,14 @@ export async function POST(request: NextRequest) {
       )
       RETURNING id, name, photo_url, status, email
     `;
-
+    console.log('Successfully inserted companion:', companion);
+    
     const token = signToken({ companionId: companion.id });
     const response = NextResponse.json({ companion });
     setSessionCookie(response, token);
     return response;
   } catch (error) {
+    console.error('Registration error details:', error);
     const msg = error instanceof Error ? error.message : 'Error en el registro';
     return NextResponse.json({ error: msg }, { status: 500 });
   }
