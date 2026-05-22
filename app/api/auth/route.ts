@@ -32,18 +32,27 @@ export async function POST(request: NextRequest) {
 
     const refCode = referralCode || start_param || null;
     let referrerId = null;
+    let referredByCompanionId = null;
 
-    if (refCode && typeof refCode === 'string' && refCode.startsWith('ref_')) {
-      const refTelegramId = refCode.replace('ref_', '');
-      const [referrer] = await sql`
-        SELECT id FROM users WHERE telegram_id = ${Number(refTelegramId)} LIMIT 1
-      `;
-      if (referrer) referrerId = referrer.id;
+    if (refCode && typeof refCode === 'string') {
+      if (refCode.startsWith('ref_')) {
+        const refTelegramId = refCode.replace('ref_', '');
+        const [referrer] = await sql`
+          SELECT id FROM users WHERE telegram_id = ${Number(refTelegramId)} LIMIT 1
+        `;
+        if (referrer) referrerId = referrer.id;
+      } else if (refCode.startsWith('crea_')) {
+        const companionId = refCode.replace('crea_', '');
+        const [companion] = await sql`
+          SELECT id FROM companions WHERE id = ${companionId}::uuid LIMIT 1
+        `;
+        if (companion) referredByCompanionId = companion.id;
+      }
     }
 
     const [newUser] = await sql`
-      INSERT INTO users (telegram_id, username, first_name, referred_by)
-      VALUES (${tgUser.id}, ${tgUser.username || null}, ${tgUser.first_name}, ${referrerId})
+      INSERT INTO users (telegram_id, username, first_name, referred_by, referred_by_companion)
+      VALUES (${tgUser.id}, ${tgUser.username || null}, ${tgUser.first_name}, ${referrerId}, ${referredByCompanionId})
       RETURNING *
     `;
 

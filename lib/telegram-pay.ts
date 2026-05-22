@@ -7,9 +7,9 @@ function getBotToken() {
 }
 
 export const STAR_PRICES = {
-  GALLERY_UNLOCK: 50,
-  SUBSCRIPTION_WEEKLY: 250,
-  VAULT_BASE: 150,
+  GALLERY_UNLOCK: 150,
+  SUBSCRIPTION_WEEKLY: 350,
+  VAULT_BASE: 200,
 } as const;
 
 export async function createInvoiceLink(params: {

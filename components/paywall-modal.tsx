@@ -20,9 +20,9 @@ export function PaywallModal({
   onPay,
   loading,
   title = "El destino tiene mas para ti",
-  description = "Desbloquea mas conexiones especiales",
-  price = "$10 MXN",
-  buttonText = "DESBLOQUEAR",
+  description = "Descubre conexiones mas profundas y exclusivas",
+  price = "150 Stars",
+  buttonText = "DESBLOQUEAR AHORA",
 }: PaywallModalProps) {
   return (
     <AnimatePresence>
