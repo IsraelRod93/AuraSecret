@@ -179,9 +179,10 @@ export default function CompanionChatPage({
 
       {/* Glass header with rounded bottom */}
       <div
-        className="glass-card absolute top-0 left-0 right-0 z-20 flex items-center gap-2.5 pt-safe"
+        className="glass-card absolute top-0 left-0 right-0 z-20 flex items-center gap-2.5"
         style={{
-          paddingBottom: "12px",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 20px)",
+          paddingBottom: "14px",
           paddingLeft: "14px",
           paddingRight: "14px",
           borderRadius: "0 0 22px 22px",
@@ -190,13 +191,13 @@ export default function CompanionChatPage({
           borderRight: "none",
         }}
       >
-        <div className="mt-4 flex items-center gap-2.5 w-full">
+        <div className="flex items-center gap-2.5 w-full">
           <button
             onClick={() => router.push("/chats")}
-            className="bg-transparent border-none cursor-pointer p-1"
+            className="bg-transparent border-none cursor-pointer p-1.5"
             style={{ color: "var(--fg-soft)" }}
           >
-            <ArrowLeft size={22} />
+            <ArrowLeft size={24} />
           </button>
 
           {companion && (
@@ -204,10 +205,10 @@ export default function CompanionChatPage({
               <img
                 src={companion.photo_url}
                 alt={companion.name}
-                className="w-[38px] h-[38px] rounded-full object-cover"
+                className="w-[40px] h-[40px] rounded-full object-cover"
               />
               <div className="flex-1">
-                <h2 className="font-serif text-[17px] font-medium text-foreground">
+                <h2 className="font-serif text-[18px] font-medium text-foreground">
                   {companion.name}
                 </h2>
                 <div
@@ -237,13 +238,13 @@ export default function CompanionChatPage({
                   background: "var(--gold-soft)",
                   border: "1px solid oklch(0.70 0.13 75 / 0.4)",
                   color: "var(--gold)",
-                  padding: "6px 12px",
-                  borderRadius: 12,
-                  fontSize: 11,
+                  padding: "7px 14px",
+                  borderRadius: 14,
+                  fontSize: 12,
                   fontWeight: 600,
                 }}
               >
-                <ImageIcon size={12} /> Vault
+                <ImageIcon size={14} /> Vault
               </button>
             </>
           )}
@@ -255,7 +256,7 @@ export default function CompanionChatPage({
         ref={scrollRef}
         className="flex-1 overflow-y-auto flex flex-col gap-2 no-scrollbar relative z-10"
         style={{ 
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 84px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 110px)",
           paddingBottom: "100px",
           paddingLeft: "16px",
           paddingRight: "16px"
