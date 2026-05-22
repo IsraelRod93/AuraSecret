@@ -138,6 +138,8 @@ export default function PanelRegister() {
                 <label className="text-primary text-xs flex items-center gap-1"><Mail size={14} /> Correo electrónico</label>
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
                   value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="tu@correo.com" required
@@ -147,6 +149,8 @@ export default function PanelRegister() {
                 <label className="text-primary text-xs flex items-center gap-1"><Lock size={14} /> Contraseña</label>
                 <input
                   type="password"
+                  name="new-password"
+                  autoComplete="new-password"
                   className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
                   value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="Mínimo 8 caracteres" required
@@ -156,6 +160,8 @@ export default function PanelRegister() {
                 <label className="text-primary text-xs flex items-center gap-1"><Lock size={14} /> Confirmar contraseña</label>
                 <input
                   type="password"
+                  name="confirm-password"
+                  autoComplete="new-password"
                   className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
                   value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="Repite tu contraseña" required

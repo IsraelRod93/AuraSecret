@@ -54,6 +54,8 @@ export default function PanelLogin() {
             </label>
             <input
               type="email"
+              name="email"
+              autoComplete="email"
               className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -69,6 +71,8 @@ export default function PanelLogin() {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
+                name="password"
+                autoComplete="current-password"
                 className="bg-background border border-border rounded-lg p-3 pr-10 text-foreground outline-none text-sm w-full"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
