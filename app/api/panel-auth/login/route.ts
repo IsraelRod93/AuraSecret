@@ -18,11 +18,16 @@ export async function POST(request: NextRequest) {
       FROM companions WHERE email = ${email.toLowerCase().trim()} LIMIT 1
     `;
 
+    console.log("LOGIN DEBUG: Búsqueda de companion para email:", email.toLowerCase().trim(), "Resultado encontrado:", !!companion);
+
     if (!companion || !companion.password_hash) {
+      console.log("LOGIN DEBUG: Companion no encontrado o sin password_hash");
       return NextResponse.json({ error: 'Correo o contraseña incorrectos' }, { status: 401 });
     }
 
     const valid = await bcrypt.compare(password, companion.password_hash);
+    console.log("LOGIN DEBUG: Validación de contraseña:", valid);
+
     if (!valid) {
       return NextResponse.json({ error: 'Correo o contraseña incorrectos' }, { status: 401 });
     }
