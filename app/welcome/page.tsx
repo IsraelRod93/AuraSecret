@@ -83,7 +83,10 @@ export default function WelcomePage() {
         {stage === "login" && (
           <LoginScreen
             onBack={() => setStage("welcome")}
-            onSuccess={handleSuccess}
+            onSuccess={() => {
+              markWelcomeDone();
+              router.push("/panel/dashboard");
+            }}
           />
         )}
         {stage === "success" && (
