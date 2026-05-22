@@ -14,6 +14,8 @@
   --gold-soft: oklch(0.70 0.13 75 / 0.25);
   --pink: oklch(0.74 0.18 0);
   --pink-soft: oklch(0.66 0.16 0 / 0.25);
+  --exit: oklch(0.72 0.22 25);
+  --exit-soft: oklch(0.55 0.20 25 / 0.35);
   --green: oklch(0.78 0.16 155);
   --green-soft: oklch(0.65 0.15 155 / 0.20);
   --border: oklch(0.30 0.06 295 / 0.35);
@@ -236,6 +238,28 @@
   display: inline-flex; align-items: center; justify-content: center;
 }
 .btn-ghost:hover { background: oklch(0.30 0.08 295 / 0.25); color: var(--fg); }
+
+.btn-exit {
+  background: linear-gradient(135deg, oklch(0.78 0.24 22), oklch(0.62 0.26 28));
+  color: white;
+  border: 1px solid oklch(0.82 0.18 25 / 0.55);
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow:
+    0 8px 26px oklch(0.55 0.22 25 / 0.45),
+    inset 0 1px 0 oklch(1 0 0 / 0.18);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-exit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px oklch(0.55 0.22 25 / 0.55);
+}
+.btn-exit:active {
+  transform: translateY(0);
+}
 
 .btn-gold {
   background: linear-gradient(135deg, oklch(0.82 0.15 75), oklch(0.72 0.16 60));

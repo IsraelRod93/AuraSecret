@@ -346,50 +346,57 @@ function ProfileTab({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [changingPhoto, setChangingPhoto] = useState(false);
+  const [newPhoto, setNewPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   const hasChanges = form.name !== companion.name ||
     form.age !== (companion.age?.toString() || '') ||
     form.location !== (companion.location || '') ||
     form.personality_type !== (companion.personality_type || '') ||
     form.tagline !== (companion.tagline || '') ||
-    form.description !== (companion.description || '');
+    form.description !== (companion.description || '') ||
+    !!newPhoto;
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      let photo_url = companion.photo_url;
+
+      if (newPhoto) {
+        setChangingPhoto(true);
+        const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(newPhoto.name)}`, { 
+          method: 'POST', 
+          body: newPhoto 
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.url) {
+          photo_url = uploadData.url;
+        }
+        setChangingPhoto(false);
+      }
+
       const res = await fetch('/api/panel-auth/update-profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, photo_url }),
       });
       const data = await res.json();
       if (res.ok) {
         onUpdate(data.companion);
+        setNewPhoto(null);
+        setPhotoPreview(null);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       }
     } finally {
       setSaving(false);
+      setChangingPhoto(false);
     }
   };
 
-  const handlePhotoUpload = async (file: File) => {
-    setChangingPhoto(true);
-    try {
-      const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
-      const uploadData = await uploadRes.json();
-      if (!uploadData.url) return;
-
-      const res = await fetch('/api/panel-auth/update-profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photo_url: uploadData.url }),
-      });
-      const data = await res.json();
-      if (res.ok) onUpdate(data.companion);
-    } finally {
-      setChangingPhoto(false);
-    }
+  const onPhotoChange = (file: File) => {
+    setNewPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
   };
 
   return (
@@ -397,11 +404,11 @@ function ProfileTab({
       {/* Photo */}
       <div className="flex justify-center">
         <label className="relative cursor-pointer">
-          <img src={companion.photo_url} alt="" className="w-24 h-24 rounded-full object-cover border-2 border-primary" />
+          <img src={photoPreview || companion.photo_url} alt="" className="w-24 h-24 rounded-full object-cover border-2 border-primary" />
           <div className="absolute bottom-0 right-0 bg-primary rounded-full w-8 h-8 flex items-center justify-center border-2 border-background">
             {changingPhoto ? <Sparkles size={14} className="text-primary-foreground animate-spin" /> : <Camera size={14} className="text-primary-foreground" />}
           </div>
-          <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handlePhotoUpload(e.target.files[0]); }} />
+          <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) onPhotoChange(e.target.files[0]); }} />
         </label>
       </div>
 

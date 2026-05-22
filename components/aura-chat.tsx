@@ -134,7 +134,7 @@ export function AuraChat() {
         type="button"
         onClick={handleLogout}
         aria-label="Salir"
-        className="fixed z-30 grid place-items-center rounded-xl bg-white/5 border border-white/10 text-fg-muted hover:text-white transition-colors cursor-pointer"
+        className="btn-exit fixed z-30 grid place-items-center"
         style={{
           top: "calc(var(--header-offset-top) + 32px)",
           right: "calc(16px + var(--tg-content-safe-right, 0px))",
