@@ -69,7 +69,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
     box-sizing: border-box;
   }
   body {
@@ -137,7 +137,15 @@
     inset 0 1px 0 oklch(1 0 0 / 0.05);
 }
 .glass-card {
-  @extend .glass;
+  background: linear-gradient(135deg,
+    oklch(0.20 0.05 295 / 0.92),
+    oklch(0.13 0.04 285 / 0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid oklch(0.45 0.10 300 / 0.22);
+  box-shadow:
+    0 0 30px oklch(0.50 0.15 300 / 0.10),
+    inset 0 1px 0 oklch(1 0 0 / 0.05);
   border-radius: var(--radius);
 }
 
