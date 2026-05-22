@@ -424,11 +424,12 @@
 /* Telegram / notch: espacio bajo botón cerrar y barra del sistema */
 :root {
   --tg-content-safe-top: 0px;
+  --tg-content-safe-left: 0px;
   --header-offset-top: env(safe-area-inset-top, 0px);
 }
 html[data-tg="1"] {
   --header-offset-top: calc(
-    env(safe-area-inset-top, 0px) + var(--tg-content-safe-top, 48px)
+    env(safe-area-inset-top, 0px) + var(--tg-content-safe-top, 56px)
   );
 }
 

@@ -174,11 +174,14 @@ export default function CompanionChatPage({
   const remaining = isSubscribed ? null : Math.max(0, FREE_LIMIT - messagesUsed);
 
   const headerTopPad = isInTelegram
-    ? "calc(var(--header-offset-top) + 12px)"
-    : "calc(var(--header-offset-top) + 52px)";
+    ? "calc(var(--header-offset-top) + 20px)"
+    : "calc(var(--header-offset-top) + 44px)";
   const messagesTopPad = isInTelegram
-    ? "calc(var(--header-offset-top) + 96px)"
-    : "calc(var(--header-offset-top) + 118px)";
+    ? "calc(var(--header-offset-top) + 100px)"
+    : "calc(var(--header-offset-top) + 120px)";
+  const headerSidePad = isInTelegram
+    ? "calc(14px + var(--tg-content-safe-left, 12px))"
+    : "14px";
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden">
@@ -190,7 +193,7 @@ export default function CompanionChatPage({
         style={{
           paddingTop: headerTopPad,
           paddingBottom: "14px",
-          paddingLeft: "14px",
+          paddingLeft: headerSidePad,
           paddingRight: "14px",
           borderRadius: "0 0 22px 22px",
           borderTop: "none",
