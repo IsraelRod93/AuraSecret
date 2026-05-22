@@ -8,7 +8,7 @@ import {
   DollarSign, TrendingUp, Users, ShoppingBag,
   MapPin, Heart, Calendar, Edit3,
   Plus, Trash2, Package, Check, X, Image,
-  MessageCircle, Send, ArrowLeft,
+  MessageCircle, Send, ArrowLeft, Link2, Copy, Share2,
 } from "lucide-react";
 
 // ── Types ──
@@ -176,6 +176,9 @@ function DashboardTab({ companionId }: { companionId: string }) {
           <p className="text-[10px] text-muted-foreground">Clientes</p>
         </div>
       </div>
+
+      {/* Shareable link */}
+      <ShareLinkCard companionId={companionId} />
 
       {/* Recent sales */}
       <div>
@@ -1053,6 +1056,72 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
         {children}
       </motion.div>
     </motion.div>
+  );
+}
+
+function ShareLinkCard({ companionId }: { companionId: string }) {
+  const [copied, setCopied] = useState(false);
+  const link = `https://t.me/AuraSecretx_bot?start=crea_${companionId}`;
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const input = document.createElement('input');
+      input.value = link;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const shareLink = async () => {
+    if (navigator.share) {
+      await navigator.share({
+        title: 'AuraSecret',
+        text: 'Descubre mi contenido exclusivo en AuraSecret',
+        url: link,
+      }).catch(() => {});
+    } else {
+      copyLink();
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-primary/20 to-pink-500/10 border border-primary/30 rounded-2xl p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Link2 className="w-4 h-4 text-primary" />
+        <h3 className="font-serif text-sm text-foreground font-medium">Tu link para fans</h3>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Comparte este link en Instagram, TikTok o Twitter para traer fans directamente a tu chat
+      </p>
+      <div className="bg-background/60 rounded-lg p-2.5 flex items-center gap-2 mb-3">
+        <code className="text-[10px] text-foreground/80 flex-1 break-all">{link}</code>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={copyLink}
+          className="flex-1 flex items-center justify-center gap-1.5 bg-card border border-border rounded-lg py-2 text-sm text-foreground hover:bg-card/80 transition-colors"
+        >
+          {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+          {copied ? 'Copiado!' : 'Copiar'}
+        </button>
+        <button
+          onClick={shareLink}
+          className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground rounded-lg py-2 text-sm font-medium"
+        >
+          <Share2 className="w-4 h-4" />
+          Compartir
+        </button>
+      </div>
+    </div>
   );
 }
 
