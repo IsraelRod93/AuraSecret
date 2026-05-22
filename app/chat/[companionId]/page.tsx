@@ -174,13 +174,13 @@ export default function CompanionChatPage({
   const remaining = isSubscribed ? null : Math.max(0, FREE_LIMIT - messagesUsed);
 
   const headerTopPad = isInTelegram
-    ? "calc(var(--header-offset-top) + 28px)"
-    : "calc(var(--header-offset-top) + 48px)";
+    ? "calc(var(--header-offset-top) + 40px)"
+    : "calc(var(--header-offset-top) + 52px)";
   const messagesTopPad = isInTelegram
-    ? "calc(var(--header-offset-top) + 108px)"
-    : "calc(var(--header-offset-top) + 128px)";
+    ? "calc(var(--header-offset-top) + 120px)"
+    : "calc(var(--header-offset-top) + 140px)";
   const headerSidePad = isInTelegram
-    ? "calc(14px + var(--tg-content-safe-left, 14px))"
+    ? "calc(16px + var(--tg-content-safe-left, 18px))"
     : "14px";
 
   return (

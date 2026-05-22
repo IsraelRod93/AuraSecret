@@ -429,7 +429,7 @@
 }
 html[data-tg="1"] {
   --header-offset-top: calc(
-    env(safe-area-inset-top, 0px) + var(--tg-content-safe-top, 64px)
+    env(safe-area-inset-top, 0px) + var(--tg-content-safe-top, 80px)
   );
 }
 
