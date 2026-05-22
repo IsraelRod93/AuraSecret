@@ -8,6 +8,7 @@ import {
   DollarSign, TrendingUp, Users, ShoppingBag,
   MapPin, Heart, Calendar, Edit3,
   Plus, Trash2, Package, Check, X, Image,
+  MessageCircle, Send, ArrowLeft,
 } from "lucide-react";
 
 // ── Types ──
@@ -48,7 +49,7 @@ const fmt = (n: number) => new Intl.NumberFormat('es-MX').format(n);
 
 export default function PanelDashboard() {
   const router = useRouter();
-  const [tab, setTab] = useState<'dashboard' | 'profile' | 'photos'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'profile' | 'photos' | 'chats'>('dashboard');
   const [companion, setCompanion] = useState<Companion | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -75,8 +76,9 @@ export default function PanelDashboard() {
 
   const TABS = [
     { key: 'dashboard' as const, label: 'Inicio', icon: BarChart3 },
-    { key: 'profile' as const, label: 'Perfil', icon: User },
+    { key: 'chats' as const, label: 'Chats', icon: MessageCircle },
     { key: 'photos' as const, label: 'Fotos', icon: Camera },
+    { key: 'profile' as const, label: 'Perfil', icon: User },
   ];
 
   return (
@@ -91,26 +93,10 @@ export default function PanelDashboard() {
               {companion.status === 'active' ? '● Perfil activo' : '○ Pendiente'}
             </p>
           </div>
-          <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground p-2" title="Cerrar sesión">
+          <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground p-2" title="Cerrar sesion">
             <LogOut size={18} />
           </button>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="max-w-lg mx-auto flex border-b border-border bg-card sticky top-0 z-20">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex-1 py-3 text-xs font-medium flex flex-col items-center gap-1 border-b-2 transition-colors ${
-              tab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'
-            }`}
-          >
-            <t.icon size={18} />
-            {t.label}
-          </button>
-        ))}
       </div>
 
       {/* Content */}
@@ -119,8 +105,27 @@ export default function PanelDashboard() {
           {tab === 'dashboard' && <DashboardTab key="dash" companionId={companion.id} />}
           {tab === 'profile' && <ProfileTab key="prof" companion={companion} onUpdate={setCompanion} />}
           {tab === 'photos' && <PhotosTab key="photos" companionId={companion.id} />}
+          {tab === 'chats' && <ChatsTab key="chats" companionId={companion.id} />}
         </AnimatePresence>
       </div>
+
+      {/* Bottom navbar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border">
+        <div className="max-w-lg mx-auto flex items-center justify-around py-2">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex flex-col items-center gap-0.5 px-4 py-1.5 transition-colors ${
+                tab === t.key ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <t.icon size={20} />
+              <span className="text-[10px] font-medium">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
@@ -360,8 +365,9 @@ function PhotosTab({ companionId }: { companionId: string }) {
   const [selectedPhoto, setSelectedPhoto] = useState<VaultItem | null>(null);
   const [editPrice, setEditPrice] = useState('');
 
-  // Package creation
+  // Package creation & editing
   const [creatingPackage, setCreatingPackage] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<string | null>(null);
   const [pkgName, setPkgName] = useState('');
   const [pkgPrice, setPkgPrice] = useState('');
   const [pkgSelected, setPkgSelected] = useState<string[]>([]);
@@ -481,7 +487,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
   };
 
   const handleDeletePackage = async (groupName: string) => {
-    if (!confirm(`¿Eliminar el paquete "${groupName}" y todas sus fotos?`)) return;
+    if (!confirm(`Eliminar el paquete "${groupName}" y todas sus fotos?`)) return;
     const pkgItems = packages[groupName];
     for (const item of pkgItems) {
       await fetch('/api/vault', {
@@ -491,6 +497,44 @@ function PhotosTab({ companionId }: { companionId: string }) {
       });
     }
     await loadItems();
+  };
+
+  const handleRemoveFromPackage = async (itemId: string) => {
+    await fetch('/api/vault', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId, groupName: null }),
+    });
+    await loadItems();
+  };
+
+  const handleAddPhotosToPackage = async (groupName: string, files: File[], price: number) => {
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
+        const uploadData = await uploadRes.json();
+        if (!uploadData.url) continue;
+
+        await fetch('/api/vault', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companionId, type: 'photo',
+            title: file.name.replace(/\.[^.]+$/, ''),
+            price,
+            fileUrl: uploadData.url,
+            groupName,
+          }),
+        });
+      }
+      await loadItems();
+    } finally { setUploading(false); }
+  };
+
+  const openEditPackage = (groupName: string) => {
+    setEditingPackage(groupName);
+    setPkgNewFiles([]);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -576,22 +620,24 @@ function PhotosTab({ companionId }: { companionId: string }) {
           ) : (
             <div className="space-y-3">
               {Object.entries(packages).map(([name, pkgItems]) => (
-                <div key={name} className="bg-card border border-border rounded-xl p-4">
+                <button
+                  key={name}
+                  onClick={() => openEditPackage(name)}
+                  className="w-full bg-card border border-border rounded-xl p-4 text-left hover:border-primary/30 transition-colors"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="font-medium text-foreground text-sm">{name}</p>
                       <p className="text-xs text-muted-foreground">{pkgItems.length} fotos · ${pkgItems[0].price / 100} MXN</p>
                     </div>
-                    <button onClick={() => handleDeletePackage(name)} className="text-red-400 hover:text-red-300 p-1">
-                      <Trash2 size={16} />
-                    </button>
+                    <Edit3 size={16} className="text-muted-foreground" />
                   </div>
                   <div className="flex gap-1.5 overflow-x-auto pb-1">
                     {pkgItems.map(item => (
                       <img key={item.id} src={item.file_url || item.thumbnail_url || ''} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                     ))}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -671,7 +717,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 <input
                   className="w-full bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm mt-1"
                   value={pkgName} onChange={e => setPkgName(e.target.value)}
-                  placeholder="Ej: Sesión en la playa"
+                  placeholder="Ej: Sesion en la playa"
                 />
               </div>
 
@@ -689,7 +735,6 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 </div>
               </div>
 
-              {/* Select existing photos */}
               {individualItems.length > 0 && (
                 <div>
                   <label className="text-xs text-muted-foreground mb-2 block">Seleccionar fotos que ya subiste</label>
@@ -712,7 +757,6 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 </div>
               )}
 
-              {/* Upload new photos for package */}
               <div>
                 <label className="text-xs text-muted-foreground mb-2 block">O sube fotos nuevas</label>
                 <label className="block bg-background border border-dashed border-border rounded-lg p-3 text-center cursor-pointer text-sm text-muted-foreground">
@@ -739,6 +783,252 @@ function PhotosTab({ companionId }: { companionId: string }) {
           </Modal>
         )}
       </AnimatePresence>
+
+      {/* Package edit modal */}
+      <AnimatePresence>
+        {editingPackage && packages[editingPackage] && (
+          <Modal onClose={() => { setEditingPackage(null); setPkgNewFiles([]); }}>
+            <h3 className="font-serif text-lg text-foreground mb-1">Editar paquete</h3>
+            <p className="text-primary text-sm font-medium mb-4">{editingPackage}</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-muted-foreground mb-2 block">Fotos en este paquete</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {packages[editingPackage].map(item => (
+                    <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden">
+                      <img src={item.file_url || item.thumbnail_url || ''} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={async () => {
+                          if (packages[editingPackage].length <= 1) {
+                            alert('Un paquete necesita al menos 1 foto. Elimina el paquete completo si quieres.');
+                            return;
+                          }
+                          await handleRemoveFromPackage(item.id);
+                        }}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground mb-2 block">Agregar mas fotos</label>
+                <label className="block bg-background border border-dashed border-border rounded-lg p-3 text-center cursor-pointer text-sm text-muted-foreground">
+                  <Plus size={16} className="inline mr-1" />
+                  {pkgNewFiles.length > 0 ? `${pkgNewFiles.length} foto${pkgNewFiles.length > 1 ? 's' : ''} seleccionada${pkgNewFiles.length > 1 ? 's' : ''}` : 'Seleccionar fotos'}
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={e => { if (e.target.files) setPkgNewFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
+                </label>
+                {pkgNewFiles.length > 0 && (
+                  <div className="grid grid-cols-4 gap-1.5 mt-2">
+                    {pkgNewFiles.map((file, i) => (
+                      <div key={i} className="relative aspect-square rounded-lg overflow-hidden">
+                        <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => setPkgNewFiles(prev => prev.filter((_, j) => j !== i))}
+                          className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                {pkgNewFiles.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      const price = packages[editingPackage][0].price;
+                      await handleAddPhotosToPackage(editingPackage, pkgNewFiles, price);
+                      setPkgNewFiles([]);
+                    }}
+                    disabled={uploading}
+                    className="flex-1 bg-primary text-primary-foreground p-3 rounded-lg font-bold text-sm disabled:opacity-50"
+                  >
+                    {uploading ? 'Subiendo...' : `Agregar ${pkgNewFiles.length} foto${pkgNewFiles.length > 1 ? 's' : ''}`}
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDeletePackage(editingPackage)}
+                  className="px-4 p-3 rounded-lg bg-red-500/20 text-red-400 font-bold text-sm"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ── Chats Tab ──
+
+interface ChatPreview {
+  conversation_id: string;
+  user_id: string;
+  message_count: number;
+  updated_at: string;
+  first_name: string | null;
+  username: string | null;
+  last_message: string | null;
+  last_message_role: string | null;
+}
+
+interface ChatMessage {
+  role: string;
+  content: string;
+  created_at: string;
+}
+
+function ChatsTab({ companionId }: { companionId: string }) {
+  const [chats, setChats] = useState<ChatPreview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeChat, setActiveChat] = useState<ChatPreview | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [msgsLoading, setMsgsLoading] = useState(false);
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => { loadChats(); }, [companionId]);
+
+  const loadChats = async () => {
+    try {
+      const res = await fetch(`/api/panel-chats?companionId=${companionId}`);
+      const data = await res.json();
+      setChats(data.chats || []);
+    } finally { setLoading(false); }
+  };
+
+  const openChat = async (chat: ChatPreview) => {
+    setActiveChat(chat);
+    setMsgsLoading(true);
+    try {
+      const res = await fetch(`/api/panel-chats/messages?conversationId=${chat.conversation_id}`);
+      const data = await res.json();
+      setMessages(data.messages || []);
+    } finally { setMsgsLoading(false); }
+  };
+
+  const sendReply = async () => {
+    if (!reply.trim() || !activeChat) return;
+    setSending(true);
+    try {
+      await fetch('/api/panel-chats/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: activeChat.conversation_id, content: reply.trim() }),
+      });
+      setMessages(prev => [...prev, { role: 'companion', content: reply.trim(), created_at: new Date().toISOString() }]);
+      setReply('');
+    } finally { setSending(false); }
+  };
+
+  const timeAgo = (date: string) => {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'ahora';
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  if (activeChat) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col" style={{ minHeight: 'calc(100vh - 180px)' }}>
+        {/* Chat header */}
+        <div className="flex items-center gap-3 mb-4">
+          <button onClick={() => setActiveChat(null)} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <p className="text-foreground font-medium text-sm">{activeChat.first_name || activeChat.username || 'Usuario'}</p>
+            <p className="text-[10px] text-muted-foreground">{activeChat.message_count} mensajes</p>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 space-y-3 overflow-y-auto mb-4 max-h-[55vh]">
+          {msgsLoading ? <LoadingSpinner /> : messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'companion' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
+                msg.role === 'companion'
+                  ? 'bg-primary/20 border border-primary/30 text-foreground'
+                  : 'bg-card border border-border text-foreground'
+              }`}>
+                <p>{msg.content}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">{timeAgo(msg.created_at)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Reply input */}
+        <div className="flex gap-2 mt-auto">
+          <input
+            className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-foreground text-sm outline-none"
+            value={reply}
+            onChange={e => setReply(e.target.value)}
+            placeholder="Escribe tu respuesta..."
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+          />
+          <button
+            onClick={sendReply}
+            disabled={!reply.trim() || sending}
+            className="bg-primary text-primary-foreground rounded-xl px-4 disabled:opacity-40"
+          >
+            <Send size={18} />
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <h3 className="font-serif text-base text-foreground mb-3">Mensajes de usuarios</h3>
+      {chats.length === 0 ? (
+        <div className="text-center py-12 bg-card border border-border rounded-xl">
+          <MessageCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">Aun no tienes mensajes</p>
+          <p className="text-xs text-muted-foreground mt-1">Cuando alguien te escriba aparecera aqui</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {chats.map(chat => (
+            <button
+              key={chat.conversation_id}
+              onClick={() => openChat(chat)}
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary/30 transition-all text-left"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <User size={18} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">{chat.first_name || chat.username || 'Usuario'}</span>
+                  <span className="text-[10px] text-muted-foreground">{timeAgo(chat.updated_at)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {chat.last_message_role === 'companion' ? 'Tu: ' : ''}{chat.last_message || '...'}
+                </p>
+              </div>
+              {chat.last_message_role === 'user' && (
+                <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }
