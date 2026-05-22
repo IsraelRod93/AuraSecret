@@ -82,11 +82,15 @@ export default function PanelRegister() {
   };
 
   const handleRegister = async () => {
-    if (!ageConfirm || !termsAccepted) return;
-    setError('');
-    setLoading(true);
-
+    console.log("BOTÓN PRESIONADO - INICIANDO FLUJO DE REGISTRO");
     try {
+      if (!ageConfirm || !termsAccepted) {
+        console.log("Validación fallida: términos o edad no aceptados");
+        return;
+      }
+      setError('');
+      setLoading(true);
+
       const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(profilePhoto!.name)}`, {
         method: 'POST',
         body: profilePhoto,
@@ -115,6 +119,7 @@ export default function PanelRegister() {
 
       router.push('/panel/dashboard');
     } catch (e) {
+      console.error("ERROR EN FRONTEND:", e);
       setError(e instanceof Error ? e.message : 'Error en el registro');
     } finally {
       setLoading(false);
