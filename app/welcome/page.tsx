@@ -264,8 +264,8 @@ function RoleCard({ title, subtitle, icon: Icon, accent, accentSoft, features, o
 
 function RegisterScreen({ role, formData, setFormData, onBack, onComplete }: {
   role: "cliente" | "creadora";
-  formData: Record<string, string>;
-  setFormData: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  formData: any;
+  setFormData: any;
   onBack: () => void;
   onComplete: () => void;
 }) {

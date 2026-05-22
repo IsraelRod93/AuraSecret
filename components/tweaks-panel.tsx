@@ -89,7 +89,7 @@ export function TweaksPanel() {
           <TweakRadio
             label="Rol"
             value={tweaks.role}
-            onChange={v => setTweak('role', v)}
+            onChange={(v: any) => setTweak('role', v)}
             options={[
               { value: 'cliente', label: 'Cliente' },
               { value: 'creadora', label: 'Creadora' },
@@ -101,13 +101,13 @@ export function TweaksPanel() {
           <TweakColor
             label="Acento"
             value={tweaks.accent}
-            onChange={v => setTweak('accent', v)}
+            onChange={(v: any) => setTweak('accent', v)}
             options={['#b489ff', '#ff89c5', '#5fc8d9', '#e4b855']}
           />
           <TweakRadio
             label="Fondo"
             value={tweaks.background}
-            onChange={v => setTweak('background', v)}
+            onChange={(v: any) => setTweak('background', v)}
             options={[
               { value: 'cosmic', label: 'Cósmico' },
               { value: 'flat',   label: 'Plano' },
@@ -116,13 +116,13 @@ export function TweaksPanel() {
           <TweakSlider
             label="Estrellas"
             value={tweaks.starDensity}
-            onChange={v => setTweak('starDensity', v)}
+            onChange={(v: any) => setTweak('starDensity', v)}
             min={0} max={150} step={5}
           />
           <TweakSlider
             label="Tamaño de texto"
             value={tweaks.fontScale}
-            onChange={v => setTweak('fontScale', v)}
+            onChange={(v: any) => setTweak('fontScale', v)}
             min={0.85} max={1.15} step={0.05}
           />
         </TweakSection>

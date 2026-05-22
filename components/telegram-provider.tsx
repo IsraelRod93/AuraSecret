@@ -72,16 +72,18 @@ declare global {
   }
 }
 
-function applyTelegramSafeInsets(tg: NonNullable<Window['Telegram']>['WebApp']) {
-  const contentTop = tg.contentSafeAreaInset?.top ?? 0;
-  const safeTop = tg.safeAreaInset?.top ?? 0;
-  const inset = Math.max(contentTop, safeTop, 48);
-  document.documentElement.style.setProperty('--tg-content-safe-top', `${inset}px`);
-  document.documentElement.setAttribute('data-tg', '1');
+function applyTelegramSafeInsets(tg: any) {
+  const update = () => {
+    const contentTop = tg.contentSafeAreaInset?.top ?? 0;
+    const safeTop = tg.safeAreaInset?.top ?? 0;
+    const inset = Math.max(contentTop, safeTop, 48);
+    document.documentElement.style.setProperty('--tg-content-safe-top', `${inset}px`);
+    document.documentElement.setAttribute('data-tg', '1');
+  };
 
-  const onViewport = () => applyTelegramSafeInsets(tg);
-  tg.onEvent?.('viewportChanged', onViewport);
-  tg.onEvent?.('safeAreaChanged', onViewport);
+  update();
+  tg.onEvent?.('viewportChanged', update);
+  tg.onEvent?.('safeAreaChanged', update);
 }
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
