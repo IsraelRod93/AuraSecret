@@ -84,7 +84,7 @@ export default function ExplorePage() {
           </button>
           <div>
             <h1 className="font-serif text-xl text-foreground">Explorar</h1>
-            <p className="text-xs text-muted-foreground">Contenido exclusivo de todas las creadoras</p>
+            <p className="text-xs text-muted-foreground">Novedades de tus creadoras favoritas</p>
           </div>
         </motion.header>
 
@@ -97,7 +97,8 @@ export default function ExplorePage() {
           ) : items.length === 0 ? (
             <div className="text-center py-12">
               <Camera className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Pronto habra contenido exclusivo</p>
+              <p className="text-muted-foreground">No hay contenido nuevo</p>
+              <p className="text-muted-foreground/60 text-xs mt-1">Aqui veras novedades de creadoras cuyo contenido ya compraste</p>
             </div>
           ) : (
             Object.entries(grouped).map(([companionId, group]) => (
