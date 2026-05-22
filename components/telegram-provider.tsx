@@ -77,10 +77,13 @@ function applyTelegramSafeInsets(tg: any) {
   const contentTop = tg.contentSafeAreaInset?.top ?? 0;
   const safeTop = tg.safeAreaInset?.top ?? 0;
   const contentLeft = tg.contentSafeAreaInset?.left ?? 0;
+  const contentRight = tg.contentSafeAreaInset?.right ?? 0;
   const insetTop = Math.max(contentTop, safeTop, 80);
   const insetLeft = Math.max(contentLeft, 18);
+  const insetRight = Math.max(contentRight, 16);
   document.documentElement.style.setProperty('--tg-content-safe-top', `${insetTop}px`);
   document.documentElement.style.setProperty('--tg-content-safe-left', `${insetLeft}px`);
+  document.documentElement.style.setProperty('--tg-content-safe-right', `${insetRight}px`);
     document.documentElement.setAttribute('data-tg', '1');
   };
 

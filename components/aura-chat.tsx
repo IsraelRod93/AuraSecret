@@ -129,6 +129,23 @@ export function AuraChat() {
         )}
       </AnimatePresence>
 
+      {/* Salir: esquina superior derecha (la X de Telegram está a la izquierda) */}
+      <button
+        type="button"
+        onClick={handleLogout}
+        aria-label="Salir"
+        className="fixed z-30 grid place-items-center rounded-xl bg-white/5 border border-white/10 text-fg-muted hover:text-white transition-colors cursor-pointer"
+        style={{
+          top: "calc(var(--header-offset-top) + 32px)",
+          right: "calc(16px + var(--tg-content-safe-right, 0px))",
+          width: 44,
+          height: 44,
+        }}
+        title="Salir"
+      >
+        <LogOut size={18} />
+      </button>
+
       {/* Header */}
       <motion.header
         className="relative z-10 page-top-inset pb-4 text-center"
@@ -136,19 +153,6 @@ export function AuraChat() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        <div
-          className="absolute top-0 pt-safe"
-          style={{ left: "calc(16px + var(--tg-content-safe-left, 0px))" }}
-        >
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-xl bg-white/5 border border-white/10 text-fg-muted hover:text-white transition-colors"
-            title="Cerrar sesión"
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
-
         <motion.div
           className="inline-block"
           whileHover={{ scale: 1.02 }}

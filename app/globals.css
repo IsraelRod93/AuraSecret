@@ -425,6 +425,7 @@
 :root {
   --tg-content-safe-top: 0px;
   --tg-content-safe-left: 0px;
+  --tg-content-safe-right: 0px;
   --header-offset-top: env(safe-area-inset-top, 0px);
 }
 html[data-tg="1"] {
