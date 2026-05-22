@@ -50,6 +50,13 @@ function GalleryPage() {
       if (searchParams.get('filtered') === 'true') params.set('filtered', 'true');
       const res = await fetch(`/api/companions?${params}`);
       const data = await res.json();
+
+      if (data.paywall) {
+        setShowPaywall(true);
+        setCompanions([]);
+        return;
+      }
+
       const all = data.batches?.flat() || [];
       setCompanions(all);
     } catch {

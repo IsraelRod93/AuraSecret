@@ -2,11 +2,12 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, Users, MessageCircle } from "lucide-react";
+import { Sparkles, Users, MessageCircle, ShoppingBag } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Aura", href: "/", icon: Sparkles },
   { label: "Galeria", href: "/gallery", icon: Users },
+  { label: "Explorar", href: "/explore", icon: ShoppingBag },
   { label: "Chats", href: "/chats", icon: MessageCircle },
 ];
 

@@ -15,7 +15,7 @@ interface Message {
   content: string;
 }
 
-const FREE_LIMIT = 7;
+const FREE_LIMIT = 12;
 
 export default function CompanionChatPage({ params }: { params: Promise<{ companionId: string }> }) {
   const { companionId } = use(params);
@@ -135,12 +135,13 @@ export default function CompanionChatPage({ params }: { params: Promise<{ compan
     }
   };
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = async (plan: 'weekly' | 'monthly') => {
     setSubLoading(true);
     try {
       const paid = await payWithTelegram({
         type: 'subscription',
         userId: appUser?.id || undefined,
+        plan,
       });
       if (paid) {
         setIsSubscribed(true);
@@ -187,19 +188,17 @@ export default function CompanionChatPage({ params }: { params: Promise<{ compan
         )}
 
         <div className="flex items-center gap-2">
-          {!isSubscribed && !isHuman && remaining !== null && (
+          {!isSubscribed && remaining !== null && (
             <span className="text-xs text-muted-foreground bg-card px-2 py-1 rounded-full">
               {remaining > 0 ? `${remaining} msgs gratis` : <Lock className="w-3 h-3" />}
             </span>
           )}
-          {isHuman && (
-            <button
-              onClick={() => router.push(`/vault/${companionId}`)}
-              className="text-primary hover:text-primary/80"
-            >
-              <ShoppingBag className="w-5 h-5" />
-            </button>
-          )}
+          <button
+            onClick={() => router.push(`/vault/${companionId}`)}
+            className="text-primary hover:text-primary/80"
+          >
+            <ShoppingBag className="w-5 h-5" />
+          </button>
         </div>
       </motion.header>
 
@@ -221,7 +220,7 @@ export default function CompanionChatPage({ params }: { params: Promise<{ compan
                 Comienza tu conversacion con {companion.name}
               </p>
               <p className="text-muted-foreground text-sm mt-2">
-                {isHuman ? 'Mensajes gratis' : `${FREE_LIMIT} mensajes gratis`}
+                {FREE_LIMIT} mensajes gratis
               </p>
             </motion.div>
           )}
@@ -244,6 +243,22 @@ export default function CompanionChatPage({ params }: { params: Promise<{ compan
               </motion.div>
             ))}
           </AnimatePresence>
+
+          {messages.length === 5 && companion && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-center"
+            >
+              <button
+                onClick={() => router.push(`/vault/${companionId}`)}
+                className="bg-primary/10 border border-primary/30 rounded-2xl px-4 py-2 flex items-center gap-2"
+              >
+                <ShoppingBag className="w-4 h-4 text-primary" />
+                <span className="text-sm text-primary">Ver contenido exclusivo de {companion.name}</span>
+              </button>
+            </motion.div>
+          )}
 
           {isTyping && (
             <motion.div

@@ -30,8 +30,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'AURA - Tu Oráculo Personal',
-  description: 'Descubre tu destino y encuentra paz interior con AURA, tu guía espiritual de inteligencia artificial',
+  title: 'AuraSecret - Conexiones Exclusivas',
+  description: 'Conoce personas increibles, chatea sin limites y accede a contenido exclusivo. Tu conexion secreta te espera.',
   generator: 'v0.app',
   icons: {
     icon: [

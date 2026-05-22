@@ -8,6 +8,21 @@ export async function GET(request: NextRequest) {
   try {
     const sql = getDb();
 
+    if (userId) {
+      const [user] = await sql`
+        SELECT options_unlocked, gallery_views FROM users WHERE id = ${userId}::uuid LIMIT 1
+      `;
+
+      const views = (user?.gallery_views || 0) + 1;
+      await sql`
+        UPDATE users SET gallery_views = ${views} WHERE id = ${userId}::uuid
+      `;
+
+      if (views > 1 && !user?.options_unlocked) {
+        return NextResponse.json({ batches: [], sessionId: null, paywall: true });
+      }
+    }
+
     let companions;
 
     if (userId && filtered) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X } from "lucide-react";
+import { Sparkles, X, Eye, Heart, Users } from "lucide-react";
 
 interface PaywallModalProps {
   open: boolean;
@@ -19,10 +19,10 @@ export function PaywallModal({
   onClose,
   onPay,
   loading,
-  title = "El destino tiene mas para ti",
-  description = "Descubre conexiones mas profundas y exclusivas",
+  title = "Hay mas chicas esperando por ti",
+  description = "Desbloquea la galeria completa y descubre quien te esta buscando",
   price = "150 Stars",
-  buttonText = "DESBLOQUEAR AHORA",
+  buttonText = "DESBLOQUEAR GALERIA",
 }: PaywallModalProps) {
   return (
     <AnimatePresence>
@@ -50,23 +50,39 @@ export function PaywallModal({
 
             <Sparkles className="w-10 h-10 text-primary mx-auto mb-4" />
             <h3 className="font-serif text-2xl text-foreground mb-2">{title}</h3>
-            <p className="text-muted-foreground text-sm mb-6">{description}</p>
+            <p className="text-muted-foreground text-sm mb-5">{description}</p>
 
-            <div className="text-3xl font-bold text-primary mb-6">{price}</div>
+            <div className="space-y-2 mb-5 text-left">
+              <div className="flex items-center gap-3 text-foreground/80">
+                <Eye className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="text-sm">Ve perfiles ilimitados</span>
+              </div>
+              <div className="flex items-center gap-3 text-foreground/80">
+                <Heart className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                <span className="text-sm">Encuentra tu conexion perfecta</span>
+              </div>
+              <div className="flex items-center gap-3 text-foreground/80">
+                <Users className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="text-sm">Acceso a creadoras reales y IA</span>
+              </div>
+            </div>
+
+            <div className="text-3xl font-bold text-primary mb-1">{price}</div>
+            <p className="text-muted-foreground text-xs mb-5">Pago unico — acceso permanente</p>
 
             <button
               onClick={onPay}
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-lg transition-all hover:bg-primary/90 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-primary to-pink-500 text-white py-4 rounded-xl font-bold text-lg transition-all hover:opacity-90 disabled:opacity-50"
             >
               {loading ? 'Procesando...' : buttonText}
             </button>
 
             <button
               onClick={onClose}
-              className="mt-4 text-muted-foreground text-sm hover:text-foreground transition-colors"
+              className="mt-3 text-muted-foreground text-xs hover:text-foreground transition-colors"
             >
-              No gracias, quizas despues
+              No gracias
             </button>
           </motion.div>
         </motion.div>

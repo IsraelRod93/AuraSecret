@@ -37,10 +37,14 @@ export async function POST(request: NextRequest) {
     if (refCode && typeof refCode === 'string') {
       if (refCode.startsWith('ref_')) {
         const refTelegramId = refCode.replace('ref_', '');
-        const [referrer] = await sql`
-          SELECT id FROM users WHERE telegram_id = ${Number(refTelegramId)} LIMIT 1
-        `;
-        if (referrer) referrerId = referrer.id;
+        if (Number(refTelegramId) === tgUser.id) {
+          // Self-referral blocked
+        } else {
+          const [referrer] = await sql`
+            SELECT id FROM users WHERE telegram_id = ${Number(refTelegramId)} LIMIT 1
+          `;
+          if (referrer) referrerId = referrer.id;
+        }
       } else if (refCode.startsWith('crea_')) {
         const companionId = refCode.replace('crea_', '');
         const [companion] = await sql`

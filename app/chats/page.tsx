@@ -79,12 +79,20 @@ export default function MyChatsPage() {
               <MessageCircle className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
               <p className="text-foreground font-serif text-lg mb-2">Aun no tienes conversaciones</p>
               <p className="text-muted-foreground text-sm mb-6">Habla con Aura para descubrir tu conexion ideal</p>
-              <button
-                onClick={() => router.push('/')}
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold"
-              >
-                Hablar con Aura
-              </button>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => router.push('/')}
+                  className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold"
+                >
+                  Hablar con Aura
+                </button>
+                <button
+                  onClick={() => router.push('/explore')}
+                  className="border border-primary/30 text-primary px-6 py-3 rounded-xl font-bold"
+                >
+                  Explorar contenido exclusivo
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">

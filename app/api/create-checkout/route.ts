@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     if (stripeAccountId && stripeAccountId !== 'primary') {
       checkoutOptions.payment_intent_data = {
-        application_fee_amount: Math.round(price * 0.20 * 100),
+        application_fee_amount: Math.round(price * 100 * 0.20),
         transfer_data: {
           destination: stripeAccountId,
         },

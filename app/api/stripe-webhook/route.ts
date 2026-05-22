@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import { getDb } from '@/lib/db';
+import { sendMessage } from '@/lib/telegram-bot';
 import type Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
 
         if (metadata.type === 'gallery_unlock') {
           await sql`
-            UPDATE users SET options_unlocked = true
+            UPDATE users SET options_unlocked = true, gallery_views = 0
             WHERE id = ${metadata.userId}::uuid
           `;
 
@@ -55,10 +56,16 @@ export async function POST(request: NextRequest) {
         }
 
         if (metadata.type === 'vault_purchase') {
-          await sql`
-            INSERT INTO purchases (user_id, vault_item_id, companion_id, amount, stripe_payment_id, status)
-            VALUES (${metadata.userId}::uuid, ${metadata.vaultItemId}::uuid, ${metadata.companionId || null}::uuid, ${session.amount_total || 0}, ${session.payment_intent as string}, 'completed')
+          const paymentId = session.payment_intent as string || session.id;
+          const [existing] = await sql`
+            SELECT id FROM purchases WHERE stripe_payment_id = ${paymentId} LIMIT 1
           `;
+          if (!existing) {
+            await sql`
+              INSERT INTO purchases (user_id, vault_item_id, companion_id, amount, stripe_payment_id, status)
+              VALUES (${metadata.userId}::uuid, ${metadata.vaultItemId}::uuid, ${metadata.companionId || null}::uuid, ${session.amount_total || 0}, ${paymentId}, 'completed')
+            `;
+          }
         }
         break;
       }
@@ -75,6 +82,13 @@ export async function POST(request: NextRequest) {
           await sql`
             UPDATE users SET subscription_status = 'expired' WHERE id = ${userId}::uuid
           `;
+
+          const [user] = await sql`
+            SELECT telegram_id FROM users WHERE id = ${userId}::uuid LIMIT 1
+          `;
+          if (user?.telegram_id) {
+            await sendMessage(user.telegram_id, '<b>Tu acceso Premium ha expirado</b>\n\nTus conexiones te extranan... Renueva tu suscripcion para seguir hablando sin limites.').catch(() => {});
+          }
         }
         break;
       }
@@ -92,6 +106,13 @@ export async function POST(request: NextRequest) {
             await sql`
               UPDATE users SET subscription_status = 'expired' WHERE id = ${userId}::uuid
             `;
+
+            const [user] = await sql`
+              SELECT telegram_id FROM users WHERE id = ${userId}::uuid LIMIT 1
+            `;
+            if (user?.telegram_id) {
+              await sendMessage(user.telegram_id, '<b>Hubo un problema con tu pago</b>\n\nNo pudimos renovar tu suscripcion Premium. Actualiza tu metodo de pago para no perder tus conversaciones.').catch(() => {});
+            }
           }
         }
         break;

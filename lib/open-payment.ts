@@ -3,6 +3,7 @@ export async function payWithTelegram(params: {
   userId?: string;
   vaultItemId?: string;
   companionId?: string;
+  plan?: 'weekly' | 'monthly';
 }): Promise<boolean> {
   const res = await fetch('/api/pay', {
     method: 'POST',

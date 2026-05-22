@@ -3,7 +3,7 @@ import { createInvoiceLink, STAR_PRICES } from '@/lib/telegram-pay';
 import { getDb } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
-  const { type, userId, vaultItemId, companionId } = await request.json();
+  const { type, userId, vaultItemId, companionId, plan } = await request.json();
 
   try {
     let invoiceUrl: string;
@@ -20,11 +20,14 @@ export async function POST(request: NextRequest) {
       }
 
       case 'subscription': {
+        const isMonthly = plan === 'monthly';
         invoiceUrl = await createInvoiceLink({
-          title: 'AuraSecret Premium',
-          description: 'Mensajes ilimitados con todas tus conexiones por 1 semana',
-          payload: JSON.stringify({ type: 'subscription', userId }),
-          prices: [{ label: 'Premium semanal', amount: STAR_PRICES.SUBSCRIPTION_WEEKLY }],
+          title: isMonthly ? 'AuraSecret Premium Mensual' : 'AuraSecret Premium Semanal',
+          description: isMonthly
+            ? 'Mensajes ilimitados por 1 mes — ahorra 37%'
+            : 'Mensajes ilimitados por 1 semana',
+          payload: JSON.stringify({ type: 'subscription', userId, plan: isMonthly ? 'monthly' : 'weekly' }),
+          prices: [{ label: isMonthly ? 'Premium mensual' : 'Premium semanal', amount: isMonthly ? STAR_PRICES.SUBSCRIPTION_MONTHLY : STAR_PRICES.SUBSCRIPTION_WEEKLY }],
         });
         break;
       }
