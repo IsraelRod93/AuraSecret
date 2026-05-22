@@ -18,7 +18,7 @@ async function verifyTokenEdge(token: string): Promise<boolean> {
 
     if (signature !== expected) return false;
 
-    const payload = JSON.parse(atob(body));
+    const payload = JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/')));
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
 
     return !!payload.companionId;
