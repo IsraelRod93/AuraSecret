@@ -26,6 +26,7 @@ export async function callGroq({ messages, jsonMode = false, temperature = 0.8 }
       model: GROQ_MODEL,
       messages,
       temperature,
+      max_tokens: 150,
       ...(jsonMode && { response_format: { type: 'json_object' } }),
     }),
   });

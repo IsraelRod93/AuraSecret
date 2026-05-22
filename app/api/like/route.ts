@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getRequestUserId } from '@/lib/get-user-id';
 
 export async function POST(request: NextRequest) {
-  const { userId, companionId } = await request.json();
+  const userId = getRequestUserId(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
 
-  if (!userId || !companionId) {
+  const { companionId } = await request.json();
+
+  if (!companionId) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 

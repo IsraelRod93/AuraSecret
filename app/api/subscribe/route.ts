@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe, PRICES } from '@/lib/stripe';
+import { getRequestUserId } from '@/lib/get-user-id';
 
 export async function POST(request: NextRequest) {
-  const { userId, plan } = await request.json();
+  const userId = getRequestUserId(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
+  const { plan } = await request.json();
   const stripe = getStripe();
 
   try {

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getSession } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
-  const companionId = request.nextUrl.searchParams.get('companionId');
-  if (!companionId) {
-    return NextResponse.json({ error: 'Missing companionId' }, { status: 400 });
+  const session = getSession(request);
+  if (!session) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
+  const companionId = session.companionId;
 
   const sql = getDb();
 

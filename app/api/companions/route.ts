@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getRequestUserId } from '@/lib/get-user-id';
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get('userId');
+  const userId = getRequestUserId(request);
   const filtered = request.nextUrl.searchParams.get('filtered') === 'true';
 
   try {

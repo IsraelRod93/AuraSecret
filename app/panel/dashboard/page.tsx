@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, User, Camera, LogOut, Sparkles, Bell,
-  DollarSign, TrendingUp, Users, ShoppingBag,
+  Star, TrendingUp, Users, ShoppingBag,
   MapPin, Heart, Calendar, Edit3,
   Plus, Trash2, Package, Check, X, Image,
   MessageCircle, Send, ArrowLeft, Link2, Copy, Share2,
@@ -161,20 +161,22 @@ function DashboardTab({ companionId }: { companionId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/dashboard?companionId=${companionId}`)
+    fetch('/api/dashboard')
       .then(r => r.json())
       .then(d => { setStats(d.stats); setSales(d.recentSales || []); })
       .finally(() => setLoading(false));
-  }, [companionId]);
+  }, []);
 
   if (loading) return <LoadingSpinner />;
 
-  const earnings = stats ? Math.round((stats.totalRevenue * 0.8) / 100) : 0;
-  const weekEarnings = stats ? Math.round((stats.weekRevenue * 0.8) / 100) : 0;
+  // amount en purchases = Telegram Stars pagados por el usuario
+  // Companion recibe 80% de los Stars totales
+  const earnings = stats ? Math.round(stats.totalRevenue * 0.8) : 0;
+  const weekEarnings = stats ? Math.round(stats.weekRevenue * 0.8) : 0;
   const monthGrowth = stats?.monthGrowth ?? 0;
 
   const weekData = stats?.weekDaily?.length === 7
-    ? stats.weekDaily.map((c) => Math.round((c * 0.8) / 100))
+    ? stats.weekDaily.map((c) => Math.round(c * 0.8))
     : [0, 0, 0, 0, 0, 0, 0];
   const weekMax = Math.max(...weekData, 1);
   const dayLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -201,9 +203,9 @@ function DashboardTab({ companionId }: { companionId: string }) {
         <p className="text-xs text-muted-foreground mb-1">Has ganado este mes</p>
         <div className="flex items-baseline gap-1.5">
           <span className="font-serif text-[44px] font-medium leading-none" style={{ color: "var(--green)" }}>
-            ${fmt(earnings)}
+            ★{fmt(earnings)}
           </span>
-          <span className="text-[13px] text-muted-foreground">MXN</span>
+          <span className="text-[13px] text-muted-foreground">Stars</span>
         </div>
         <div className="flex items-center gap-1.5 mt-2.5">
           <span className="chip-green">
@@ -242,7 +244,7 @@ function DashboardTab({ companionId }: { companionId: string }) {
         {[
           { icon: ShoppingBag, color: "var(--gold)", n: stats?.totalSales || 0, label: "ventas" },
           { icon: Users, color: "oklch(0.78 0.16 220)", n: stats?.uniqueClients || 0, label: "clientes" },
-          { icon: TrendingUp, color: "var(--pink)", n: `$${fmt(weekEarnings)}`, label: "esta semana" },
+          { icon: TrendingUp, color: "var(--pink)", n: `★${fmt(weekEarnings)}`, label: "esta semana" },
         ].map((s, i) => (
           <div key={i} className="solid-card rounded-[14px] p-3 text-center">
             <s.icon size={16} style={{ color: s.color, margin: "0 auto" }} />
@@ -278,7 +280,7 @@ function DashboardTab({ companionId }: { companionId: string }) {
                     background: "var(--green-soft)", color: "var(--green)",
                   }}
                 >
-                  <DollarSign size={14} />
+                  <Star size={14} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium">{sale.title || 'Contenido'}</p>
@@ -287,7 +289,7 @@ function DashboardTab({ companionId }: { companionId: string }) {
                   </p>
                 </div>
                 <span className="font-serif text-base font-medium" style={{ color: "var(--green)" }}>
-                  +${fmt(Math.round((sale.amount * 0.8) / 100))}
+                  +★{fmt(Math.round(sale.amount * 0.8))}
                 </span>
               </div>
             ))}
@@ -454,10 +456,10 @@ function ProfileTab({
       {/* Payment info */}
       <div className="bg-card border border-border rounded-xl p-4 space-y-2">
         <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-          <DollarSign size={16} className="text-green-400" /> Información de pagos
+          <Star size={16} className="text-green-400" /> Información de pagos
         </h4>
         <p className="text-xs text-muted-foreground">
-          Tú recibes el <strong className="text-green-400">80%</strong> de cada venta. Los pagos se procesan automáticamente a través de Telegram Stars.
+          Tú recibes el <strong className="text-green-400">80%</strong> de cada venta en <strong className="text-green-400">Telegram Stars ★</strong>. Las Stars se acumulan en tu cuenta y las retiras cuando quieras.
         </p>
       </div>
 

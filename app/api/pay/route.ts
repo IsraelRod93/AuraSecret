@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoiceLink, STAR_PRICES } from '@/lib/telegram-pay';
 import { getDb } from '@/lib/db';
+import { getRequestUserId } from '@/lib/get-user-id';
 
 export async function POST(request: NextRequest) {
-  const { type, userId, vaultItemId, companionId, plan } = await request.json();
+  const userId = getRequestUserId(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
+  const { type, vaultItemId, companionId, plan } = await request.json();
 
   try {
     let invoiceUrl: string;

@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getRequestUserId } from '@/lib/get-user-id';
+import { getSession } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
-  const { companionId, type, title, price, fileUrl, groupName } = await request.json();
+  const session = getSession(request);
+  if (!session) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
 
-  if (!companionId || !fileUrl) {
+  const { type, title, price, fileUrl, groupName } = await request.json();
+  const companionId = session.companionId;
+
+  if (!fileUrl) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
@@ -24,6 +32,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const session = getSession(request);
+  if (!session) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
   const { itemId, price, title, groupName } = await request.json();
 
   if (!itemId) {
@@ -38,9 +51,10 @@ export async function PATCH(request: NextRequest) {
         price = COALESCE(${price ?? null}, price),
         title = COALESCE(${title ?? null}, title),
         group_name = ${groupName !== undefined ? groupName : null}
-      WHERE id = ${itemId}::uuid
+      WHERE id = ${itemId}::uuid AND companion_id = ${session.companionId}::uuid
       RETURNING *
     `;
+    if (!item) return NextResponse.json({ error: 'No encontrado o sin permiso' }, { status: 403 });
     return NextResponse.json({ item });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update';
@@ -49,6 +63,11 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const session = getSession(request);
+  if (!session) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
   const { itemId } = await request.json();
 
   if (!itemId) {
@@ -58,7 +77,10 @@ export async function DELETE(request: NextRequest) {
   const sql = getDb();
 
   try {
-    await sql`DELETE FROM vault_items WHERE id = ${itemId}::uuid`;
+    await sql`
+      DELETE FROM vault_items
+      WHERE id = ${itemId}::uuid AND companion_id = ${session.companionId}::uuid
+    `;
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete';
@@ -68,7 +90,7 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const companionId = request.nextUrl.searchParams.get('companionId');
-  const userId = request.nextUrl.searchParams.get('userId');
+  const userId = getRequestUserId(request);
 
   if (!companionId) {
     return NextResponse.json({ error: 'companionId required' }, { status: 400 });

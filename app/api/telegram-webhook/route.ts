@@ -21,6 +21,14 @@ function parsePayload(raw: string): { type: string; userId?: string; vaultItemId
 }
 
 export async function POST(request: NextRequest) {
+  const secret = process.env.WEBHOOK_SECRET;
+  if (secret) {
+    const header = request.headers.get('x-telegram-bot-api-secret-token');
+    if (header !== secret) {
+      return NextResponse.json({ ok: false }, { status: 401 });
+    }
+  }
+
   const update = await request.json();
   const sql = getDb();
 

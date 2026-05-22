@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateTelegramInitData } from '@/lib/telegram';
 import { getDb } from '@/lib/db';
+import { signUserToken, setUserSessionCookie } from '@/lib/user-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +28,10 @@ export async function POST(request: NextRequest) {
         UPDATE users SET username = ${tgUser.username || null}, first_name = ${tgUser.first_name}
         WHERE id = ${existing.id}
       `;
-      return NextResponse.json({ user: existing });
+      const token = signUserToken({ userId: existing.id });
+      const response = NextResponse.json({ user: existing });
+      setUserSessionCookie(response, token);
+      return response;
     }
 
     const refCode = referralCode || start_param || null;
@@ -67,7 +71,10 @@ export async function POST(request: NextRequest) {
       `;
     }
 
-    return NextResponse.json({ user: newUser });
+    const token = signUserToken({ userId: newUser.id });
+    const response = NextResponse.json({ user: newUser });
+    setUserSessionCookie(response, token);
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Auth failed';
     return NextResponse.json({ error: message }, { status: 500 });

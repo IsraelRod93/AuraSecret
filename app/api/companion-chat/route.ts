@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { callGroq } from '@/lib/groq';
+import { getRequestUserId } from '@/lib/get-user-id';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const FREE_MESSAGE_LIMIT = 12;
 
@@ -12,10 +14,10 @@ function checkSubscribed(user: any): boolean {
 
 export async function GET(request: NextRequest) {
   const companionId = request.nextUrl.searchParams.get('companionId');
-  const userId = request.nextUrl.searchParams.get('userId');
+  const userId = getRequestUserId(request);
 
   if (!companionId || !userId) {
-    return NextResponse.json({ error: 'Missing params' }, { status: 400 });
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
 
   const sql = getDb();
@@ -61,9 +63,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { companionId, message, userId } = await request.json();
+  const userId = getRequestUserId(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
 
-  if (!companionId || !message || !userId) {
+  if (!checkRateLimit(`chat:${userId}`)) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes, espera un momento' }, { status: 429 });
+  }
+
+  const { companionId, message } = await request.json();
+
+  if (!companionId || !message) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
