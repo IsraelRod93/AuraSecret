@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/daily-engagement",
-      "schedule": "0 10,18,22 * * *"
+      "schedule": "0 18 * * *"
     }
   ]
 }
