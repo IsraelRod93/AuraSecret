@@ -17,6 +17,7 @@ interface ExploreItem {
   companion_name: string;
   companion_photo: string;
   purchased: boolean;
+  group_name: string | null;
 }
 
 export default function ExplorePage() {
@@ -96,7 +97,7 @@ export default function ExplorePage() {
           Object.entries(grouped).map(([companionId, group]) => (
             <div key={companionId} className="mb-7">
               <button
-                onClick={() => router.push(`/chat/${companionId}`)}
+                onClick={() => router.push(`/vault/${companionId}`)}
                 className="flex items-center gap-2.5 mb-2.5 w-full text-left bg-transparent border-none cursor-pointer p-0"
                 style={{ color: "var(--foreground)" }}
               >
@@ -159,6 +160,14 @@ export default function ExplorePage() {
                           <span className="text-white font-bold text-xs">
                             ${(item.price / 100).toFixed(0)}
                           </span>
+                          {item.group_name && (
+                            <span
+                              className="text-[9px] font-semibold"
+                              style={{ color: "var(--gold)" }}
+                            >
+                              {item.group_name}
+                            </span>
+                          )}
                           {purchaseLoading === item.id && (
                             <span className="tap-dots">
                               <span />

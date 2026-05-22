@@ -41,7 +41,16 @@ export default function WelcomePage() {
     setStage("success");
   };
 
+  const markWelcomeDone = () => {
+    try {
+      localStorage.setItem("aura_welcome_done", "1");
+    } catch {
+      // ignore
+    }
+  };
+
   const handleSuccess = () => {
+    markWelcomeDone();
     if (role === "creadora") {
       router.push("/panel");
     } else {

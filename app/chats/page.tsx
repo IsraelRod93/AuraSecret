@@ -59,7 +59,10 @@ export default function MyChatsPage() {
           <h1 className="font-serif text-[26px] text-foreground">Tus conversaciones</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {chats.length > 0
-              ? `${chats.length} chat${chats.length !== 1 ? "s" : ""} activo${chats.length !== 1 ? "s" : ""}`
+              ? (() => {
+                  const total = chats.reduce((n, c) => n + c.messageCount, 0);
+                  return `${total} mensaje${total !== 1 ? "s" : ""} sin leer`;
+                })()
               : "Retoma donde lo dejaste"}
           </p>
         </div>

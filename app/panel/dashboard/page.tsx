@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  BarChart3, User, Camera, LogOut, Sparkles,
+  BarChart3, User, Camera, LogOut, Sparkles, Bell,
   DollarSign, TrendingUp, Users, ShoppingBag,
   MapPin, Heart, Calendar, Edit3,
   Plus, Trash2, Package, Check, X, Image,
   MessageCircle, Send, ArrowLeft, Link2, Copy, Share2,
 } from "lucide-react";
+import { CelestialBackground } from "@/components/celestial-background";
 
 // ── Types ──
 
@@ -27,6 +28,8 @@ interface VaultItem {
 interface Stats {
   totalSales: number; totalRevenue: number; uniqueClients: number;
   totalItems: number; weekRevenue: number;
+  monthGrowth?: number;
+  weekDaily?: number[];
 }
 
 interface Sale {
@@ -76,15 +79,17 @@ export default function PanelDashboard() {
 
   const TABS = [
     { key: 'dashboard' as const, label: 'Inicio', icon: BarChart3 },
-    { key: 'chats' as const, label: 'Chats', icon: MessageCircle },
     { key: 'photos' as const, label: 'Fotos', icon: Camera },
+    { key: 'chats' as const, label: 'Chats', icon: MessageCircle },
     { key: 'profile' as const, label: 'Perfil', icon: User },
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
+    <div className="min-h-screen bg-background text-foreground pb-24 relative overflow-hidden">
+      <CelestialBackground />
+
       {/* Header */}
-      <div className="px-4 pt-4 pb-3">
+      <div className="relative z-10 px-4 pt-[76px] pb-3">
         <div className="max-w-lg mx-auto flex items-center gap-3">
           <img
             src={companion.photo_url}
@@ -100,28 +105,35 @@ export default function PanelDashboard() {
             </div>
           </div>
           <button
-            onClick={handleLogout}
+            type="button"
             className="p-2 cursor-pointer"
-            title="Cerrar sesion"
+            title="Notificaciones"
             style={{ background: "transparent", border: "1px solid var(--border)", borderRadius: 12, color: "var(--fg-soft)" }}
           >
-            <LogOut size={16} />
+            <Bell size={16} />
           </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-4">
+      <div className="relative z-10 max-w-lg mx-auto px-4">
         <AnimatePresence mode="wait">
           {tab === 'dashboard' && <DashboardTab key="dash" companionId={companion.id} />}
-          {tab === 'profile' && <ProfileTab key="prof" companion={companion} onUpdate={setCompanion} />}
+          {tab === 'profile' && (
+            <ProfileTab
+              key="prof"
+              companion={companion}
+              onUpdate={setCompanion}
+              onLogout={handleLogout}
+            />
+          )}
           {tab === 'photos' && <PhotosTab key="photos" companionId={companion.id} />}
           {tab === 'chats' && <ChatsTab key="chats" companionId={companion.id} />}
         </AnimatePresence>
       </div>
 
       {/* Bottom navbar */}
-      <nav className="fixed bottom-3 left-3 right-3 z-30 nav-glass">
+      <nav className="fixed bottom-3 left-3 right-3 z-30 nav-glass" style={{ borderRadius: 20, padding: "8px 6px" }}>
         <div className="max-w-lg mx-auto flex items-center justify-around py-2.5">
           {TABS.map(t => (
             <button
@@ -159,9 +171,12 @@ function DashboardTab({ companionId }: { companionId: string }) {
 
   const earnings = stats ? Math.round((stats.totalRevenue * 0.8) / 100) : 0;
   const weekEarnings = stats ? Math.round((stats.weekRevenue * 0.8) / 100) : 0;
+  const monthGrowth = stats?.monthGrowth ?? 0;
 
-  const weekData = [22, 48, 31, 67, 89, 124, 96];
-  const weekMax = Math.max(...weekData);
+  const weekData = stats?.weekDaily?.length === 7
+    ? stats.weekDaily.map((c) => Math.round((c * 0.8) / 100))
+    : [0, 0, 0, 0, 0, 0, 0];
+  const weekMax = Math.max(...weekData, 1);
   const dayLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
   return (
@@ -192,7 +207,8 @@ function DashboardTab({ companionId }: { companionId: string }) {
         </div>
         <div className="flex items-center gap-1.5 mt-2.5">
           <span className="chip-green">
-            <TrendingUp size={11} /> +32%
+            <TrendingUp size={11} />
+            {monthGrowth >= 0 ? `+${monthGrowth}%` : `${monthGrowth}%`}
           </span>
           <span className="text-[11px] text-muted-foreground">vs mes pasado</span>
         </div>
@@ -310,7 +326,15 @@ function DashboardTab({ companionId }: { companionId: string }) {
 
 // ── Profile Tab ──
 
-function ProfileTab({ companion, onUpdate }: { companion: Companion; onUpdate: (c: Companion) => void }) {
+function ProfileTab({
+  companion,
+  onUpdate,
+  onLogout,
+}: {
+  companion: Companion;
+  onUpdate: (c: Companion) => void;
+  onLogout: () => void;
+}) {
   const [form, setForm] = useState({
     name: companion.name,
     age: companion.age?.toString() || '',
@@ -429,6 +453,14 @@ function ProfileTab({ companion, onUpdate }: { companion: Companion; onUpdate: (
           Tú recibes el <strong className="text-green-400">80%</strong> de cada venta. Los pagos se procesan automáticamente a través de Telegram Stars.
         </p>
       </div>
+
+      <button
+        type="button"
+        onClick={onLogout}
+        className="btn-ghost w-full flex items-center justify-center gap-2"
+      >
+        <LogOut size={16} /> Cerrar sesión
+      </button>
 
       <style jsx>{`
         .input-field {

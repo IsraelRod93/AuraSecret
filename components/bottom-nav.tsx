@@ -14,16 +14,24 @@ export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isHidden = pathname.startsWith('/chat/') || pathname.startsWith('/vault/') || pathname.startsWith('/panel');
+  const isHidden =
+    pathname.startsWith('/chat/') ||
+    pathname.startsWith('/vault/') ||
+    pathname.startsWith('/panel') ||
+    pathname === '/welcome';
   if (isHidden) return null;
 
   return (
     <nav className="absolute bottom-3.5 left-3 right-3 z-30 pointer-events-none">
-      <div className="nav-glass max-w-lg mx-auto pointer-events-auto" style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${NAV_ITEMS.length}, 1fr)`,
-        padding: '8px 6px',
-      }}>
+      <div
+        className="nav-glass max-w-lg mx-auto pointer-events-auto"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${NAV_ITEMS.length}, 1fr)`,
+          padding: '8px 6px',
+          borderRadius: 20,
+        }}
+      >
         {NAV_ITEMS.map((item) => {
           const isActive = item.href === '/'
             ? pathname === '/'

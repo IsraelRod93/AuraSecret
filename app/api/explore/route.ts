@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     const items = await sql`
-      SELECT vi.id, vi.type, vi.title, vi.price, vi.thumbnail_url, vi.companion_id,
+      SELECT vi.id, vi.type, vi.title, vi.price, vi.thumbnail_url, vi.group_name, vi.companion_id,
              c.name as companion_name, c.photo_url as companion_photo
       FROM vault_items vi
       JOIN companions c ON c.id = vi.companion_id AND c.status = 'active'
