@@ -23,7 +23,7 @@ interface VaultItem {
 export default function VaultPage({ params }: { params: Promise<{ companionId: string }> }) {
   const { companionId } = use(params);
   const router = useRouter();
-  const { appUser } = useTelegram();
+  const { appUser, isInTelegram } = useTelegram();
   const [items, setItems] = useState<VaultItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
@@ -75,11 +75,22 @@ export default function VaultPage({ params }: { params: Promise<{ companionId: s
       <div className="relative z-10 max-w-lg mx-auto">
         {/* Header */}
         <motion.header
-          className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border/30"
+          className="flex items-center gap-3 px-4 pb-3 border-b border-border/30"
+          style={{
+            paddingTop: isInTelegram
+              ? "calc(var(--header-offset-top) + 12px)"
+              : "calc(var(--header-offset-top) + 52px)",
+          }}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <button onClick={() => router.push(`/chat/${companionId}`)} className="text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            aria-label="Volver al chat"
+            onClick={() => router.push(`/chat/${companionId}`)}
+            className="text-muted-foreground hover:text-foreground flex items-center justify-center shrink-0"
+            style={{ minWidth: 44, minHeight: 44, marginLeft: -8 }}
+          >
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>

@@ -23,7 +23,7 @@ export default function CompanionChatPage({
 }) {
   const { companionId } = use(params);
   const router = useRouter();
-  const { appUser } = useTelegram();
+  const { appUser, isInTelegram } = useTelegram();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -173,6 +173,13 @@ export default function CompanionChatPage({
   const isAI = companion?.type !== "human";
   const remaining = isSubscribed ? null : Math.max(0, FREE_LIMIT - messagesUsed);
 
+  const headerTopPad = isInTelegram
+    ? "calc(var(--header-offset-top) + 12px)"
+    : "calc(var(--header-offset-top) + 52px)";
+  const messagesTopPad = isInTelegram
+    ? "calc(var(--header-offset-top) + 96px)"
+    : "calc(var(--header-offset-top) + 118px)";
+
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden">
       <CelestialBackground />
@@ -181,7 +188,7 @@ export default function CompanionChatPage({
       <div
         className="glass-card absolute top-0 left-0 right-0 z-20 flex items-center gap-2.5"
         style={{
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 20px)",
+          paddingTop: headerTopPad,
           paddingBottom: "14px",
           paddingLeft: "14px",
           paddingRight: "14px",
@@ -193,9 +200,16 @@ export default function CompanionChatPage({
       >
         <div className="flex items-center gap-2.5 w-full">
           <button
+            type="button"
             onClick={() => router.push("/chats")}
-            className="bg-transparent border-none cursor-pointer p-1.5"
-            style={{ color: "var(--fg-soft)" }}
+            aria-label="Volver al menu"
+            className="bg-transparent border-none cursor-pointer flex items-center justify-center shrink-0"
+            style={{
+              color: "var(--fg-soft)",
+              minWidth: 44,
+              minHeight: 44,
+              marginLeft: -4,
+            }}
           >
             <ArrowLeft size={24} />
           </button>
@@ -255,8 +269,8 @@ export default function CompanionChatPage({
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto flex flex-col gap-2 no-scrollbar relative z-10"
-        style={{ 
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 110px)",
+        style={{
+          paddingTop: messagesTopPad,
           paddingBottom: "100px",
           paddingLeft: "16px",
           paddingRight: "16px"

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, LogOut } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { OracleOrb } from "@/components/oracle-orb";
 import { useTelegram } from "@/components/telegram-provider";
@@ -94,6 +94,13 @@ export function AuraChat() {
     }
   };
 
+  const handleLogout = () => {
+    if (confirm("¿Deseas cerrar sesión y volver al inicio?")) {
+      localStorage.removeItem("aura_welcome_done");
+      window.location.href = "/welcome";
+    }
+  };
+
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden">
       <CelestialBackground />
@@ -129,6 +136,16 @@ export function AuraChat() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
+        <div className="absolute left-4 top-8 pt-safe">
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-xl bg-white/5 border border-white/10 text-fg-muted hover:text-white transition-colors"
+            title="Cerrar sesión"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+
         <motion.div
           className="inline-block"
           whileHover={{ scale: 1.02 }}

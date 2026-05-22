@@ -63,9 +63,25 @@ declare global {
           impactOccurred: (style: string) => void;
           notificationOccurred: (type: string) => void;
         };
+        contentSafeAreaInset?: { top: number; bottom: number; left: number; right: number };
+        safeAreaInset?: { top: number; bottom: number; left: number; right: number };
+        onEvent?: (event: string, handler: () => void) => void;
+        offEvent?: (event: string, handler: () => void) => void;
       };
     };
   }
+}
+
+function applyTelegramSafeInsets(tg: NonNullable<Window['Telegram']>['WebApp']) {
+  const contentTop = tg.contentSafeAreaInset?.top ?? 0;
+  const safeTop = tg.safeAreaInset?.top ?? 0;
+  const inset = Math.max(contentTop, safeTop, 48);
+  document.documentElement.style.setProperty('--tg-content-safe-top', `${inset}px`);
+  document.documentElement.setAttribute('data-tg', '1');
+
+  const onViewport = () => applyTelegramSafeInsets(tg);
+  tg.onEvent?.('viewportChanged', onViewport);
+  tg.onEvent?.('safeAreaChanged', onViewport);
 }
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
@@ -85,6 +101,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       setIsInTelegram(true);
       tg.ready();
       tg.expand();
+      applyTelegramSafeInsets(tg);
       
       // Newer Telegram versions support requestFullscreen for a truly immersive experience
       try {
