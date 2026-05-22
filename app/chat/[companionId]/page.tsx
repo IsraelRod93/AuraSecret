@@ -179,78 +179,87 @@ export default function CompanionChatPage({
 
       {/* Glass header with rounded bottom */}
       <div
-        className="glass-card absolute top-0 left-0 right-0 z-20 flex items-center gap-2.5"
+        className="glass-card absolute top-0 left-0 right-0 z-20 flex items-center gap-2.5 pt-safe"
         style={{
-          padding: "64px 14px 12px",
+          paddingBottom: "12px",
+          paddingLeft: "14px",
+          paddingRight: "14px",
           borderRadius: "0 0 22px 22px",
           borderTop: "none",
           borderLeft: "none",
           borderRight: "none",
         }}
       >
-        <button
-          onClick={() => router.push("/chats")}
-          className="bg-transparent border-none cursor-pointer p-1"
-          style={{ color: "var(--fg-soft)" }}
-        >
-          <ArrowLeft size={22} />
-        </button>
+        <div className="mt-4 flex items-center gap-2.5 w-full">
+          <button
+            onClick={() => router.push("/chats")}
+            className="bg-transparent border-none cursor-pointer p-1"
+            style={{ color: "var(--fg-soft)" }}
+          >
+            <ArrowLeft size={22} />
+          </button>
 
-        {companion && (
-          <>
-            <img
-              src={companion.photo_url}
-              alt={companion.name}
-              className="w-[38px] h-[38px] rounded-full object-cover"
-            />
-            <div className="flex-1">
-              <h2 className="font-serif text-[17px] font-medium text-foreground">
-                {companion.name}
-              </h2>
-              <div
-                className="flex items-center gap-1 text-[10px]"
+          {companion && (
+            <>
+              <img
+                src={companion.photo_url}
+                alt={companion.name}
+                className="w-[38px] h-[38px] rounded-full object-cover"
+              />
+              <div className="flex-1">
+                <h2 className="font-serif text-[17px] font-medium text-foreground">
+                  {companion.name}
+                </h2>
+                <div
+                  className="flex items-center gap-1 text-[10px]"
+                  style={{
+                    color: isAI ? "var(--primary)" : "var(--green)",
+                  }}
+                >
+                  <span
+                    className="inline-block rounded-full"
+                    style={{
+                      width: 6,
+                      height: 6,
+                      background: isAI
+                        ? "var(--primary)"
+                        : "var(--green)",
+                    }}
+                  />
+                  {isAI ? "IA · siempre disponible" : "En linea"}
+                </div>
+              </div>
+
+              <button
+                onClick={() => router.push(`/vault/${companionId}`)}
+                className="flex items-center gap-[5px] cursor-pointer"
                 style={{
-                  color: isAI ? "var(--primary)" : "var(--green)",
+                  background: "var(--gold-soft)",
+                  border: "1px solid oklch(0.70 0.13 75 / 0.4)",
+                  color: "var(--gold)",
+                  padding: "6px 12px",
+                  borderRadius: 12,
+                  fontSize: 11,
+                  fontWeight: 600,
                 }}
               >
-                <span
-                  className="inline-block rounded-full"
-                  style={{
-                    width: 6,
-                    height: 6,
-                    background: isAI
-                      ? "var(--primary)"
-                      : "var(--green)",
-                  }}
-                />
-                {isAI ? "IA · siempre disponible" : "En linea"}
-              </div>
-            </div>
-
-            <button
-              onClick={() => router.push(`/vault/${companionId}`)}
-              className="flex items-center gap-[5px] cursor-pointer"
-              style={{
-                background: "var(--gold-soft)",
-                border: "1px solid oklch(0.70 0.13 75 / 0.4)",
-                color: "var(--gold)",
-                padding: "6px 12px",
-                borderRadius: 12,
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
-              <ImageIcon size={12} /> Vault
-            </button>
-          </>
-        )}
+                <ImageIcon size={12} /> Vault
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto flex flex-col gap-2 no-scrollbar relative z-10"
-        style={{ padding: "128px 16px 100px" }}
+        style={{ 
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 84px)",
+          paddingBottom: "100px",
+          paddingLeft: "16px",
+          paddingRight: "16px"
+        }}
       >
         {messages.length === 0 && companion && (
           <div className="text-center py-8 animate-fade">
