@@ -101,49 +101,50 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const authenticate = async () => {
     try {
       const tg = window.Telegram?.WebApp;
-      if (!tg || !tg.initData) {
-        setIsLoading(false);
-        return;
-      }
 
-      setIsInTelegram(true);
-      tg.ready();
-      tg.expand();
-      applyTelegramSafeInsets(tg);
-      
-      // Newer Telegram versions support requestFullscreen for a truly immersive experience
-      try {
-        // @ts-ignore
-        if (tg.requestFullscreen) {
+      if (tg?.initData) {
+        setIsInTelegram(true);
+        tg.ready();
+        tg.expand();
+        applyTelegramSafeInsets(tg);
+
+        try {
           // @ts-ignore
-          tg.requestFullscreen();
+          if (tg.requestFullscreen) tg.requestFullscreen();
+        } catch (e) {
+          console.warn('Fullscreen request failed', e);
         }
-      } catch (e) {
-        console.warn('Fullscreen request failed', e);
-      }
 
-      tg.setHeaderColor('#0a0814');
-      tg.setBackgroundColor('#0a0814');
+        tg.setHeaderColor('#0a0814');
+        tg.setBackgroundColor('#0a0814');
 
-      if (tg.initDataUnsafe.user) {
-        setTelegramUser(tg.initDataUnsafe.user);
-      }
+        if (tg.initDataUnsafe.user) {
+          setTelegramUser(tg.initDataUnsafe.user);
+        }
 
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          initData: tg.initData,
-          referralCode: tg.initDataUnsafe.start_param || null,
-        }),
-      });
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            initData: tg.initData,
+            referralCode: tg.initDataUnsafe.start_param || null,
+          }),
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        setAppUser(data.user);
+        if (res.ok) {
+          const data = await res.json();
+          setAppUser(data.user);
+        }
+      } else {
+        // Fuera de Telegram: intentar sesión de usuario por cookie
+        const res = await fetch('/api/user-auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setAppUser(data.user);
+        }
       }
     } catch {
-      // Silent fail — app works without auth for non-Telegram access
+      // Silent fail
     } finally {
       setIsLoading(false);
     }

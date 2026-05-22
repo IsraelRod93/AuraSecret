@@ -22,6 +22,19 @@ export async function POST(request: NextRequest) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'gallery_views') THEN
           ALTER TABLE users ADD COLUMN gallery_views INTEGER DEFAULT 0;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email') THEN
+          ALTER TABLE users ADD COLUMN email TEXT UNIQUE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'password_hash') THEN
+          ALTER TABLE users ADD COLUMN password_hash TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'age') THEN
+          ALTER TABLE users ADD COLUMN age INTEGER;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'looking_for') THEN
+          ALTER TABLE users ADD COLUMN looking_for TEXT;
+        END IF;
+        ALTER TABLE users ALTER COLUMN telegram_id DROP NOT NULL;
       END $$;
     `;
 

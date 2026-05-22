@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { getDb } from '@/lib/db';
+import { signUserToken, setUserSessionCookie } from '@/lib/user-auth';
+
+export async function POST(request: NextRequest) {
+  const { email, password, name, age, lookingFor } = await request.json();
+
+  if (!email || !password || !name) {
+    return NextResponse.json({ error: 'Nombre, correo y contraseña requeridos' }, { status: 400 });
+  }
+  if (password.length < 6) {
+    return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres' }, { status: 400 });
+  }
+
+  const sql = getDb();
+
+  try {
+    const existing = await sql`
+      SELECT id FROM users WHERE email = ${email.toLowerCase().trim()} LIMIT 1
+    `;
+    if (existing.length > 0) {
+      return NextResponse.json({ error: 'Ya existe una cuenta con este correo' }, { status: 409 });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const [user] = await sql`
+      INSERT INTO users (first_name, email, password_hash, age, looking_for)
+      VALUES (
+        ${name},
+        ${email.toLowerCase().trim()},
+        ${passwordHash},
+        ${age ? Number(age) : null},
+        ${lookingFor || null}
+      )
+      RETURNING id, first_name, email, age, looking_for, subscription_status, options_unlocked
+    `;
+
+    const token = signUserToken({ userId: user.id });
+    const response = NextResponse.json({ user });
+    setUserSessionCookie(response, token);
+    return response;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error en el registro';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}

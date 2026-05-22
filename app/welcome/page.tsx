@@ -83,9 +83,9 @@ export default function WelcomePage() {
         {stage === "login" && (
           <LoginScreen
             onBack={() => setStage("welcome")}
-            onSuccess={() => {
+            onSuccess={(role) => {
               markWelcomeDone();
-              router.push("/panel/dashboard");
+              router.push(role === 'companion' ? "/panel/dashboard" : "/");
             }}
           />
         )}
@@ -331,6 +331,23 @@ function RegisterScreen({ role, formData, setFormData, onBack, onComplete }: {
               personality_type: formData.personality.toLowerCase(),
               tagline: formData.tagline,
               photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.name}`,
+            }),
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            alert(data.error || "Error al registrar");
+            return;
+          }
+        } else {
+          const res = await fetch("/api/user-auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: formData.email,
+              password: formData.password,
+              name: formData.name,
+              age: formData.age ? Number(formData.age) : undefined,
+              lookingFor: formData.looking_for,
             }),
           });
           if (!res.ok) {
@@ -612,7 +629,7 @@ function FormField({ label, icon: Icon, children }: {
 
 function LoginScreen({ onBack, onSuccess }: {
   onBack: () => void;
-  onSuccess: () => void;
+  onSuccess: (role: 'companion' | 'user') => void;
 }) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -624,17 +641,28 @@ function LoginScreen({ onBack, onSuccess }: {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/panel-auth/login", {
+      const companionRes = await fetch("/api/panel-auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password: pass }),
       });
-      if (res.ok) {
-        onSuccess();
-      } else {
-        const data = await res.json();
-        setError(data.error || "Credenciales incorrectas");
+      if (companionRes.ok) {
+        onSuccess('companion');
+        return;
       }
+
+      const userRes = await fetch("/api/user-auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: pass }),
+      });
+      if (userRes.ok) {
+        onSuccess('user');
+        return;
+      }
+
+      const data = await userRes.json();
+      setError(data.error || "Credenciales incorrectas");
     } catch {
       setError("Error de conexion");
     } finally {
