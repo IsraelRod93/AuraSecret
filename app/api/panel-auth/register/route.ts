@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    console.log("API REGISTER: Intentando insertar en la base de datos...");
     console.log('DEBUG_REGISTRO: Intentando INSERT con data:', { name, email, age, location });
     const [companion] = await sql`
       INSERT INTO companions (name, type, photo_url, status, email, password_hash, description, tagline, age, location, personality_type)
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
     setSessionCookie(response, token);
     return response;
   } catch (error) {
+    console.error("CRÍTICO - ERROR EN API REGISTER:", error);
     console.error('ERROR EN REGISTRO DE COMPANION:', error);
     const msg = error instanceof Error ? error.message : 'Error en el registro';
     return NextResponse.json({ error: msg }, { status: 500 });
