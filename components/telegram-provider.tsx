@@ -85,8 +85,20 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       setIsInTelegram(true);
       tg.ready();
       tg.expand();
-      tg.setHeaderColor('#050507');
-      tg.setBackgroundColor('#050507');
+      
+      // Newer Telegram versions support requestFullscreen for a truly immersive experience
+      try {
+        // @ts-ignore
+        if (tg.requestFullscreen) {
+          // @ts-ignore
+          tg.requestFullscreen();
+        }
+      } catch (e) {
+        console.warn('Fullscreen request failed', e);
+      }
+
+      tg.setHeaderColor('#0a0814');
+      tg.setBackgroundColor('#0a0814');
 
       if (tg.initDataUnsafe.user) {
         setTelegramUser(tg.initDataUnsafe.user);

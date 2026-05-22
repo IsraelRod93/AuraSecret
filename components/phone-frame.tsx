@@ -1,8 +1,20 @@
 "use client";
 
 import React from "react";
+import { useTelegram } from "./telegram-provider";
 
 export function PhoneFrame({ children }: { children: React.ReactNode }) {
+  const { isInTelegram } = useTelegram();
+
+  // If in Telegram, don't show the outer frame, just the content
+  if (isInTelegram) {
+    return (
+      <div className="flex flex-col min-h-screen w-full relative">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="phone-outer">
       <div className="phone-frame">
@@ -17,6 +29,7 @@ export function PhoneFrame({ children }: { children: React.ReactNode }) {
 }
 
 export function StatusBar({ dark = false }: { dark?: boolean }) {
+  const { isInTelegram } = useTelegram();
   const [time, setTime] = React.useState("9:41");
 
   React.useEffect(() => {
@@ -28,6 +41,9 @@ export function StatusBar({ dark = false }: { dark?: boolean }) {
     const timer = setInterval(updateTime, 10000);
     return () => clearInterval(timer);
   }, []);
+
+  // Hide simulated status bar in Telegram since it has its own
+  if (isInTelegram) return null;
 
   const c = dark ? "#fff" : "#fff"; // Default to white for Aura theme
   return (
