@@ -134,11 +134,11 @@ export function AuraChat() {
           whileHover={{ scale: 1.02 }}
           transition={{ type: "spring", stiffness: 300 }}
         >
-          <h1 className="font-serif text-5xl md:text-6xl font-light tracking-[0.3em] text-gradient-mystical">
+          <h1 className="font-serif text-4xl font-light tracking-[0.32em] gradient-text">
             AURA
           </h1>
-          <p className="font-serif text-lg md:text-xl text-muted-foreground tracking-[0.15em] mt-2 italic">
-            {appUser?.first_name ? `Bienvenido, ${appUser.first_name}` : 'Tu conexion secreta'}
+          <p className="font-serif text-sm text-muted-foreground tracking-[0.12em] mt-1 italic">
+            {appUser?.first_name ? `Bienvenido, ${appUser.first_name}` : 'tu conexion secreta'}
           </p>
         </motion.div>
       </motion.header>

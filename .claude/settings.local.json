@@ -22,7 +22,23 @@
       "Bash(Copy-Item -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\app\\\\*\" -Destination \"C:\\\\Users\\\\Israel\\\\AuraSecret\\\\app\\\\\" -Recurse -Force; Copy-Item -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\lib\\\\*\" -Destination \"C:\\\\Users\\\\Israel\\\\AuraSecret\\\\lib\\\\\" -Recurse -Force)",
       "Bash(Copy-Item -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\components\\\\*\" -Destination \"C:\\\\Users\\\\Israel\\\\AuraSecret\\\\components\\\\\" -Recurse -Force; Write-Output \"Synced OK\")",
       "Bash(git commit -m ' *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npx tsc *)",
+      "Bash(git diff *)",
+      "Bash(curl *)",
+      "Bash(Select-String -Pattern \"bcrypt\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\" -Recurse -Filter \"*.sql\" -ErrorAction SilentlyContinue)",
+      "Bash(node *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\app\" -Recurse | Where-Object {$_.Extension -eq \".ts\" -or $_.Extension -eq \".tsx\"} | Select-Object FullName | Format-List)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\lib\" -Recurse | Where-Object {$_.Extension -eq \".ts\" -or $_.Extension -eq \".tsx\"} | Select-Object Name)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\components\" -Recurse | Where-Object {$_.Extension -eq \".ts\" -or $_.Extension -eq \".tsx\"} | Select-Object Name)",
+      "PowerShell(git *)",
+      "PowerShell(vercel *)",
+      "PowerShell(npm install *)",
+      "WebFetch(domain:aura-secret.vercel.app)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\Israel\\\\Curso-C#\\\\AuraSecret\\\\app\\\\panel\\\\dashboard\\\\page.tsx\" | Measure-Object -Line\\).Lines)"
     ]
   }
 }

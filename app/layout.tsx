@@ -4,6 +4,10 @@ import { Geist, Geist_Mono, Cormorant_Garamond, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { TelegramProvider } from '@/components/telegram-provider'
 import { BottomNav } from '@/components/bottom-nav'
+import { PhoneFrame, StatusBar } from '@/components/phone-frame'
+import { RoleSwitcher, SideInfo } from '@/components/role-switcher'
+import { TweaksPanel } from '@/components/tweaks-panel'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const geist = Geist({ 
@@ -67,10 +71,27 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
       <body className={`${geist.variable} ${geistMono.variable} ${cormorant.variable} ${inter.variable} font-sans antialiased min-h-screen bg-background`}>
-        <TelegramProvider>
-          {children}
-          <BottomNav />
-        </TelegramProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TelegramProvider>
+            <div className="phone-outer">
+              <SideInfo />
+              <PhoneFrame>
+                <StatusBar />
+                <div className="flex-1 overflow-auto relative">
+                  {children}
+                </div>
+                <BottomNav />
+              </PhoneFrame>
+              <RoleSwitcher />
+              <TweaksPanel />
+            </div>
+          </TelegramProvider>
+        </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

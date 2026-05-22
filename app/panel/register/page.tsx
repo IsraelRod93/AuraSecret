@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Mail, Lock, User, Calendar, MapPin, Heart, Camera, ChevronRight, ChevronLeft } from 'lucide-react';
+import { 
+  Sparkles, Mail, Lock, User, Calendar, MapPin, 
+  Heart, Camera, ChevronRight, ChevronLeft,
+  Globe, Shield, DollarSign, ArrowLeft, Check
+} from 'lucide-react';
+import { CelestialBackground } from '@/components/celestial-background';
 
 const PERSONALITY_OPTIONS = [
   { value: 'romantica', label: 'Romántica' },
@@ -72,7 +77,8 @@ export default function PanelRegister() {
       const err = validateStep2();
       if (err) { setError(err); return; }
     }
-    setStep(step + 1);
+    if (step < 3) setStep(step + 1);
+    else handleRegister();
   };
 
   const handleRegister = async () => {
@@ -115,214 +121,164 @@ export default function PanelRegister() {
     }
   };
 
+  const totalSteps = 3;
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center font-serif p-5">
-      <div className="bg-card p-8 rounded-2xl border-2 border-primary max-w-md w-full">
-        <div className="text-center mb-6">
-          <Sparkles className="text-primary mx-auto mb-3" size={40} />
-          <h1 className="text-primary text-2xl mb-1">Únete a AURA</h1>
-          <p className="text-muted-foreground text-sm">Crea tu perfil y empieza a ganar</p>
-        </div>
+    <div className="absolute inset-0 flex flex-col px-[22px] py-[76px] pb-6 overflow-hidden">
+      <CelestialBackground />
 
-        {/* Step indicator */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          {[1, 2, 3].map(s => (
-            <div key={s} className={`w-3 h-3 rounded-full transition-colors ${s <= step ? 'bg-primary' : 'bg-border'}`} />
-          ))}
+      {/* Top: back + progress */}
+      <div className="flex items-center gap-2.5 mb-[18px] relative z-10">
+        <button onClick={() => step === 1 ? router.back() : setStep(step - 1)} className="bg-transparent border-none text-fg-soft cursor-pointer p-1">
+          <ArrowLeft size={20} />
+        </button>
+        <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-primary to-gold transition-all duration-300"
+            style={{ width: `${(step / totalSteps) * 100}%` }}
+          />
         </div>
+        <div className="text-[11px] text-fg-muted min-w-[30px] text-right">
+          {step}/{totalSteps}
+        </div>
+      </div>
 
+      {/* Role chip */}
+      <div className="chip self-start bg-primary-soft text-primary border-primary mb-[18px] relative z-10">
+        <Camera size={11} /> Creadora
+      </div>
+
+      {/* Step content */}
+      <div className="mb-[22px] relative z-10">
+        <h1 className="serif text-[26px] leading-[1.15] mb-1">
+          {step === 1 && "Crea tu cuenta"}
+          {step === 2 && "Tu perfil artístico"}
+          {step === 3 && "Verifica tu edad"}
+        </h1>
+        <p className="text-[13px] text-fg-muted">
+          {step === 1 && "Email y contraseña para entrar a tu panel"}
+          {step === 2 && "Estos datos aparecerán en tu perfil de Aura"}
+          {step === 3 && "Solo +18 pueden compartir contenido"}
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3.5 relative z-10">
         <AnimatePresence mode="wait">
           {step === 1 && (
-            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-primary text-xs flex items-center gap-1"><Mail size={14} /> Correo electrónico</label>
-                <input
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-                  value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="tu@correo.com" required
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-primary text-xs flex items-center gap-1"><Lock size={14} /> Contraseña</label>
-                <input
-                  type="password"
-                  name="new-password"
-                  autoComplete="new-password"
-                  className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-                  value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres" required
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-primary text-xs flex items-center gap-1"><Lock size={14} /> Confirmar contraseña</label>
-                <input
-                  type="password"
-                  name="confirm-password"
-                  autoComplete="new-password"
-                  className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-                  value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                  placeholder="Repite tu contraseña" required
-                />
+            <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3.5">
+              <FormField label="Email" icon={Globe}>
+                <input className="input-aura" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" />
+              </FormField>
+              <FormField label="Contraseña" icon={Lock}>
+                <input className="input-aura" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" />
+              </FormField>
+              <FormField label="Confirmar" icon={Lock}>
+                <input className="input-aura" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repite tu contraseña" />
+              </FormField>
+              
+              <div className="bg-green-soft/10 border border-green/30 rounded-xl p-3.5 flex items-start gap-3">
+                <DollarSign size={14} className="text-green mt-1 flex-shrink-0" />
+                <div className="text-[12px] text-fg-soft leading-relaxed">
+                  Recibes el <b className="text-green">80%</b> de cada venta. Sin comisiones ocultas, retiros cuando quieras.
+                </div>
               </div>
             </motion.div>
           )}
 
           {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-primary text-xs flex items-center gap-1"><User size={14} /> Nombre artístico</label>
-                <input
-                  className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-                  value={name} onChange={e => setName(e.target.value)}
-                  placeholder="Ej: Luna Mística" required
-                />
-              </div>
-
+            <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3.5 pb-4">
+              <FormField label="Nombre artístico" icon={User}>
+                <input className="input-aura" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Valeria" />
+              </FormField>
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-primary text-xs flex items-center gap-1"><Calendar size={14} /> Edad</label>
-                  <input
-                    type="number" min="18" max="60"
-                    className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-                    value={age} onChange={e => setAge(e.target.value)}
-                    placeholder="25" required
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-primary text-xs flex items-center gap-1"><MapPin size={14} /> Ciudad</label>
-                  <input
-                    className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-                    value={location} onChange={e => setLocation(e.target.value)}
-                    placeholder="CDMX" required
-                  />
-                </div>
+                <FormField label="Edad" icon={Calendar}>
+                  <input className="input-aura" type="number" min="18" value={age} onChange={e => setAge(e.target.value)} placeholder="24" />
+                </FormField>
+                <FormField label="Ciudad" icon={MapPin}>
+                  <input className="input-aura" value={location} onChange={e => setLocation(e.target.value)} placeholder="CDMX" />
+                </FormField>
               </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-primary text-xs flex items-center gap-1"><Heart size={14} /> Personalidad</label>
-                <select
-                  className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-                  value={personality} onChange={e => setPersonality(e.target.value)} required
-                >
-                  <option value="">Selecciona tu estilo...</option>
-                  {PERSONALITY_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <FormField label="Personalidad" icon={Heart}>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {PERSONALITY_OPTIONS.map(p => (
+                    <button key={p.value} onClick={() => setPersonality(p.value)} className={`
+                      py-2.5 rounded-xl text-[12px] font-medium border transition-all
+                      ${personality === p.value ? 'bg-primary-soft border-primary text-primary' : 'bg-white/5 border-white/10 text-fg-soft'}
+                    `}>
+                      {p.label}
+                    </button>
                   ))}
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-primary text-xs flex items-center gap-1"><Sparkles size={14} /> Frase que te describe</label>
-                <input
-                  className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm"
-                  value={tagline} onChange={e => setTagline(e.target.value)}
-                  placeholder="Ej: La vida es corta para ser aburrida..."
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-primary text-xs flex items-center gap-1">Sobre ti (breve)</label>
-                <textarea
-                  className="bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm resize-none"
-                  rows={2} value={description} onChange={e => setDescription(e.target.value)}
-                  placeholder="Cuéntale a tus admiradores algo sobre ti..."
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-primary text-xs flex items-center gap-1"><Camera size={14} /> Foto de perfil</label>
+                </div>
+              </FormField>
+              <FormField label="Frase que te describe" icon={Sparkles}>
+                <input className="input-aura" value={tagline} onChange={e => setTagline(e.target.value)} placeholder="Ej: Me encantan las noches largas" />
+              </FormField>
+              <FormField label="Foto de perfil" icon={Camera}>
                 {photoPreview ? (
                   <div className="relative w-24 h-24 mx-auto">
                     <img src={photoPreview} alt="" className="w-24 h-24 rounded-full object-cover border-2 border-primary" />
-                    <button
-                      type="button"
-                      onClick={() => handlePhotoChange(null)}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-                    >✕</button>
+                    <button onClick={() => handlePhotoChange(null)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs border-none cursor-pointer">✕</button>
                   </div>
                 ) : (
-                  <label className="bg-background border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary transition-colors">
-                    <Camera className="mx-auto mb-2 text-muted-foreground" size={24} />
-                    <span className="text-muted-foreground text-sm">Toca para subir tu foto</span>
-                    <input
-                      type="file" accept="image/*" className="hidden"
-                      onChange={e => handlePhotoChange(e.target.files?.[0] || null)}
-                    />
+                  <label className="block bg-white/5 border-2 border-dashed border-white/10 rounded-2xl p-5 text-center cursor-pointer hover:border-primary transition-colors">
+                    <Camera className="mx-auto mb-1 text-fg-muted" size={24} />
+                    <span className="text-fg-muted text-[13px]">Sube tu mejor foto</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={e => handlePhotoChange(e.target.files?.[0] || null)} />
                   </label>
                 )}
-              </div>
+              </FormField>
             </motion.div>
           )}
 
           {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col gap-4">
-              <div className="bg-background rounded-xl p-4 text-center">
+            <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3.5">
+              <div className="bg-white/5 rounded-2xl p-4 text-center border border-white/10">
                 {photoPreview && <img src={photoPreview} alt="" className="w-20 h-20 rounded-full object-cover border-2 border-primary mx-auto mb-3" />}
-                <p className="text-foreground font-medium">{name}</p>
-                <p className="text-muted-foreground text-sm">{age} años · {location}</p>
+                <p className="text-foreground font-medium text-base">{name}</p>
+                <p className="text-fg-muted text-[12px]">{age} años · {location}</p>
               </div>
 
-              <div className="flex flex-col gap-3 mt-2">
-                <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
-                  <input
-                    type="checkbox" checked={ageConfirm} onChange={e => setAgeConfirm(e.target.checked)}
-                    className="mt-1 accent-primary" required
-                  />
-                  <span>Confirmo que tengo <strong>18 años o más</strong> y que la información es verídica.</span>
+              <div className="flex flex-col gap-3 pt-2">
+                <label className="flex items-start gap-3 text-[13px] text-fg-soft cursor-pointer">
+                  <input type="checkbox" checked={ageConfirm} onChange={e => setAgeConfirm(e.target.checked)} className="mt-1 accent-primary" />
+                  <span>Confirmo que tengo <strong className="text-foreground">18 años o más</strong> y que la información es verídica.</span>
                 </label>
-
-                <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
-                  <input
-                    type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)}
-                    className="mt-1 accent-primary" required
-                  />
-                  <span>Acepto los <a href="/terms" className="text-primary underline">términos de servicio</a> y confirmo que todo el contenido que suba será legal y de mi propiedad.</span>
+                <label className="flex items-start gap-3 text-[13px] text-fg-soft cursor-pointer">
+                  <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 accent-primary" />
+                  <span>Acepto los <a href="/terms" className="text-primary underline">términos de servicio</a> y confirmo que mi contenido es legal.</span>
                 </label>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {error && <p className="text-red-400 text-sm text-center mt-3">{error}</p>}
-
-        <div className="flex gap-3 mt-6">
-          {step > 1 && (
-            <button
-              type="button"
-              onClick={() => { setError(''); setStep(step - 1); }}
-              className="flex items-center justify-center gap-1 px-4 py-3 rounded-lg border border-border text-muted-foreground text-sm"
-            >
-              <ChevronLeft size={16} /> Atrás
-            </button>
-          )}
-          {step < 3 ? (
-            <button
-              type="button"
-              onClick={nextStep}
-              className="flex-1 flex items-center justify-center gap-1 bg-primary text-primary-foreground p-3 rounded-lg font-bold text-sm"
-            >
-              Siguiente <ChevronRight size={16} />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleRegister}
-              className="flex-1 bg-primary text-primary-foreground p-3 rounded-lg font-bold text-sm disabled:opacity-50"
-              disabled={loading || !ageConfirm || !termsAccepted}
-            >
-              {loading ? 'Creando perfil...' : 'CREAR MI PERFIL'}
-            </button>
-          )}
-        </div>
-
-        <p className="text-center text-muted-foreground text-sm mt-6">
-          ¿Ya tienes cuenta?{' '}
-          <a href="/panel/login" className="text-primary underline">Inicia sesión</a>
-        </p>
       </div>
+
+      {error && <p className="text-red-400 text-[12px] text-center mb-3 relative z-10">{error}</p>}
+
+      <button
+        onClick={nextStep}
+        disabled={loading || (step === 3 && (!ageConfirm || !termsAccepted))}
+        className="btn-primary w-full relative z-10"
+        style={{ opacity: loading ? 0.45 : 1 }}
+      >
+        {loading ? 'Creando...' : step === 3 ? 'Finalizar registro' : 'Continuar'}
+      </button>
+
+      <p className="text-center text-fg-muted text-[11px] mt-4 relative z-10">
+        ¿Ya tienes cuenta?{' '}
+        <a href="/panel/login" className="text-primary underline underline-offset-2">Inicia sesión</a>
+      </p>
+    </div>
+  );
+}
+
+function FormField({ label, icon: Ic, children }: { label: string; icon?: any; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="inline-flex items-center gap-1.5 text-[11px] text-primary font-medium tracking-wide uppercase pl-1">
+        {Ic && <Ic size={12} />} {label}
+      </label>
+      {children}
     </div>
   );
 }
