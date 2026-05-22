@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
         invoiceUrl = await createInvoiceLink({
           title: 'Desbloquear Galeria',
           description: 'Descubre mas conexiones especiales en Aura',
-          payload: JSON.stringify({ type: 'gallery_unlock', userId }),
+          payload: `g:${userId}`,
           prices: [{ label: 'Mas opciones', amount: STAR_PRICES.GALLERY_UNLOCK }],
         });
         break;
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
           description: isMonthly
             ? 'Mensajes ilimitados por 1 mes — ahorra 37%'
             : 'Mensajes ilimitados por 1 semana',
-          payload: JSON.stringify({ type: 'subscription', userId, plan: isMonthly ? 'monthly' : 'weekly' }),
+          payload: `s:${userId}:${isMonthly ? 'm' : 'w'}`,
           prices: [{ label: isMonthly ? 'Premium mensual' : 'Premium semanal', amount: isMonthly ? STAR_PRICES.SUBSCRIPTION_MONTHLY : STAR_PRICES.SUBSCRIPTION_WEEKLY }],
         });
         break;
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         invoiceUrl = await createInvoiceLink({
           title: item.title || 'Contenido exclusivo',
           description: `De ${item.companion_name || 'Aura'}`,
-          payload: JSON.stringify({ type: 'vault_purchase', userId, vaultItemId, companionId: item.companion_id }),
+          payload: `v:${userId}:${vaultItemId}:${item.companion_id}`,
           prices: [{ label: item.title || 'Contenido', amount: starPrice }],
         });
         break;

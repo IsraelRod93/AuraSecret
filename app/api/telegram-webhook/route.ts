@@ -3,6 +3,23 @@ import { answerPreCheckoutQuery } from '@/lib/telegram-pay';
 import { sendMessage } from '@/lib/telegram-bot';
 import { getDb } from '@/lib/db';
 
+function parsePayload(raw: string): { type: string; userId?: string; vaultItemId?: string; companionId?: string; plan?: string } {
+  // New compact format: "g:userId", "s:userId:w", "v:userId:vaultItemId:companionId"
+  if (raw.startsWith('g:')) {
+    return { type: 'gallery_unlock', userId: raw.slice(2) };
+  }
+  if (raw.startsWith('s:')) {
+    const parts = raw.split(':');
+    return { type: 'subscription', userId: parts[1], plan: parts[2] === 'm' ? 'monthly' : 'weekly' };
+  }
+  if (raw.startsWith('v:')) {
+    const parts = raw.split(':');
+    return { type: 'vault_purchase', userId: parts[1], vaultItemId: parts[2], companionId: parts[3] };
+  }
+  // Legacy JSON format
+  try { return JSON.parse(raw); } catch { return { type: 'unknown' }; }
+}
+
 export async function POST(request: NextRequest) {
   const update = await request.json();
   const sql = getDb();
@@ -15,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (update.message?.successful_payment) {
       const payment = update.message.successful_payment;
-      const payload = JSON.parse(payment.invoice_payload);
+      const payload = parsePayload(payment.invoice_payload);
       const chatId = update.message.chat.id;
 
       switch (payload.type) {
@@ -25,7 +42,7 @@ export async function POST(request: NextRequest) {
               UPDATE users SET options_unlocked = true, gallery_views = 0 WHERE id = ${payload.userId}::uuid
             `;
 
-            await sendMessage(chatId, "<b>Galeria desbloqueada!</b> ✨\n\nHe abierto las puertas de mi galeria secreta para ti. Vuelve a la app y descubre a las diosas que estaban esperando conocerte. No las hagas esperar...");
+            await sendMessage(chatId, "<b>Galeria desbloqueada!</b> ✨\n\nHe abierto las puertas de mi galeria secreta para ti. Vuelve a la app y descubre a las diosas que estaban esperando conocerte.");
 
             const [payer] = await sql`
               SELECT referred_by FROM users WHERE id = ${payload.userId}::uuid LIMIT 1
@@ -83,21 +100,6 @@ export async function POST(request: NextRequest) {
             }
 
             await sendMessage(chatId, "<b>Tesoro desbloqueado...</b> 🔓\n\nLo que acabas de adquirir es solo para tus ojos. Disfrutalo en tu boveda privada.");
-
-            // Notify the creator about the sale
-            if (payload.companionId) {
-              const [companion] = await sql`
-                SELECT c.name, u.telegram_id as creator_telegram_id
-                FROM companions c
-                LEFT JOIN users u ON u.id = c.id
-                WHERE c.id = ${payload.companionId}::uuid LIMIT 1
-              `;
-              // Also check if companion itself has a linked telegram
-              const [buyer] = await sql`
-                SELECT first_name FROM users WHERE id = ${payload.userId}::uuid LIMIT 1
-              `;
-              // For now notify the buyer's chat about the purchase confirmation
-            }
           }
           break;
         }
