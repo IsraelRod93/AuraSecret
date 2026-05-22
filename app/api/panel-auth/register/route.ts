@@ -19,8 +19,10 @@ export async function POST(request: NextRequest) {
   }
 
   const sql = getDb();
+  console.log('VERIFICANDO DB:', { sql: !!sql });
 
   try {
+    console.log('DEBUG_REGISTRO: Iniciando proceso');
     const existing = await sql`SELECT id FROM companions WHERE email = ${email.toLowerCase().trim()} LIMIT 1`;
     if (existing.length > 0) {
       return NextResponse.json({ error: 'Ya existe una cuenta con este correo' }, { status: 409 });
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    console.log('Attempting to insert companion:', { name, email, photo_url });
+    console.log('DEBUG_REGISTRO: Intentando INSERT con data:', { name, email, age, location });
     const [companion] = await sql`
       INSERT INTO companions (name, type, photo_url, status, email, password_hash, description, tagline, age, location, personality_type)
       VALUES (
@@ -42,14 +44,14 @@ export async function POST(request: NextRequest) {
       )
       RETURNING id, name, photo_url, status, email
     `;
-    console.log('Successfully inserted companion:', companion);
+    console.log('DEBUG_REGISTRO: Insert finalizado correctamente:', companion);
     
     const token = signToken({ companionId: companion.id });
     const response = NextResponse.json({ companion });
     setSessionCookie(response, token);
     return response;
   } catch (error) {
-    console.error('Registration error details:', error);
+    console.error('ERROR EN REGISTRO DE COMPANION:', error);
     const msg = error instanceof Error ? error.message : 'Error en el registro';
     return NextResponse.json({ error: msg }, { status: 500 });
   }
