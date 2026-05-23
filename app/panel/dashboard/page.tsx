@@ -731,14 +731,13 @@ function PhotosTab({ companionId }: { companionId: string }) {
       await loadItems();
     } finally { setUploading(false); }
   };
-const openEditPackage = (groupName: string) => {
-  setEditingPackage(groupName);
-  setEditPkgName(groupName);
-  const pkgItems = packages[groupName];
-  if (pkgItems && pkgItems.length > 0) {
-    setEditPkgPrice(String(pkgItems[0].price / 100));
-  }
-};
+  const openEditPackage = (groupName: string) => {
+    setEditingPackage(groupName);
+    setEditPkgName(groupName);
+    const pkgItems = packages[groupName];
+    if (pkgItems && pkgItems.length > 0) {
+      setEditPkgPrice(String(pkgItems[0].price / 100));
+    }
     setPkgNewFiles([]);
   };
 
