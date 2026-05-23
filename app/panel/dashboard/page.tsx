@@ -1276,7 +1276,7 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
       onClick={onClose}
     >
       <motion.div
-        className="bg-card rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm border border-border max-h-[85vh] overflow-y-auto relative"
+        className="bg-card rounded-t-2xl sm:rounded-2xl p-6 pb-24 sm:pb-6 w-full max-w-sm border border-border max-h-[85vh] overflow-y-auto relative"
         initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
         onClick={e => e.stopPropagation()}
       >
