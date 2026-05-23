@@ -511,6 +511,8 @@ function PhotosTab({ companionId }: { companionId: string }) {
   // Package creation & editing
   const [creatingPackage, setCreatingPackage] = useState(false);
   const [editingPackage, setEditingPackage] = useState<string | null>(null);
+  const [editPkgName, setEditPkgName] = useState('');
+  const [editPkgPrice, setEditPkgPrice] = useState('');
   const [pkgName, setPkgName] = useState('');
   const [pkgPrice, setPkgPrice] = useState('');
   const [pkgSelected, setPkgSelected] = useState<string[]>([]);
@@ -544,7 +546,6 @@ function PhotosTab({ companionId }: { companionId: string }) {
   const handleUploadWithPrice = async () => {
     if (!priceModal) return;
     setUploading(true);
-    setPriceModal(null);
 
     try {
       for (const file of priceModal.files) {
@@ -563,6 +564,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
           }),
         });
       }
+      setPriceModal(null);
       await loadItems();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error al subir');
@@ -632,14 +634,69 @@ function PhotosTab({ companionId }: { companionId: string }) {
   const handleDeletePackage = async (groupName: string) => {
     if (!confirm(`Eliminar el paquete "${groupName}" y todas sus fotos?`)) return;
     const pkgItems = packages[groupName];
-    for (const item of pkgItems) {
-      await fetch('/api/vault', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId: item.id }),
-      });
+    setUploading(true);
+    try {
+      for (const item of pkgItems) {
+        await fetch('/api/vault', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemId: item.id }),
+        });
+      }
+      setEditingPackage(null);
+      await loadItems();
+    } catch { 
+      alert('Error al eliminar paquete'); 
+    } finally { 
+      setUploading(false); 
     }
-    await loadItems();
+  };
+
+  const handleUpdatePackage = async () => {
+    if (!editingPackage || !editPkgName || !editPkgPrice) return;
+    setUploading(true);
+    try {
+      const pkgItems = packages[editingPackage];
+      // Update existing items in the package
+      for (const item of pkgItems) {
+        await fetch('/api/vault', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            itemId: item.id, 
+            groupName: editPkgName, 
+            price: Number(editPkgPrice) * 100 
+          }),
+        });
+      }
+
+      // Upload new photos to the package
+      for (const file of pkgNewFiles) {
+        const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
+        const uploadData = await uploadRes.json();
+        if (!uploadData.url) continue;
+
+        await fetch('/api/vault', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companionId, type: 'photo',
+            title: file.name.replace(/\.[^.]+$/, ''),
+            price: Number(editPkgPrice) * 100,
+            fileUrl: uploadData.url,
+            groupName: editPkgName,
+          }),
+        });
+      }
+
+      setEditingPackage(null);
+      setPkgNewFiles([]);
+      await loadItems();
+    } catch { 
+      alert('Error al actualizar paquete'); 
+    } finally { 
+      setUploading(false); 
+    }
   };
 
   const handleRemoveFromPackage = async (itemId: string) => {
@@ -674,9 +731,14 @@ function PhotosTab({ companionId }: { companionId: string }) {
       await loadItems();
     } finally { setUploading(false); }
   };
-
-  const openEditPackage = (groupName: string) => {
-    setEditingPackage(groupName);
+const openEditPackage = (groupName: string) => {
+  setEditingPackage(groupName);
+  setEditPkgName(groupName);
+  const pkgItems = packages[groupName];
+  if (pkgItems && pkgItems.length > 0) {
+    setEditPkgPrice(String(pkgItems[0].price / 100));
+  }
+};
     setPkgNewFiles([]);
   };
 
@@ -806,8 +868,12 @@ function PhotosTab({ companionId }: { companionId: string }) {
               />
               <span className="text-muted-foreground text-sm">MXN</span>
             </div>
-            <button onClick={handleUploadWithPrice} className="w-full bg-primary text-primary-foreground p-3 rounded-lg font-bold">
-              SUBIR FOTOS
+            <button 
+              onClick={handleUploadWithPrice} 
+              disabled={uploading}
+              className="w-full bg-primary text-primary-foreground p-3 rounded-lg font-bold disabled:opacity-50"
+            >
+              {uploading ? 'Subiendo...' : 'GUARDAR Y SUBIR'}
             </button>
           </Modal>
         )}
@@ -913,6 +979,11 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 <p className="text-xs text-muted-foreground">
                   {pkgSelected.length + pkgNewFiles.length} foto{pkgSelected.length + pkgNewFiles.length !== 1 ? 's' : ''} en el paquete
                 </p>
+                {pkgName && pkgPrice && pkgSelected.length === 0 && pkgNewFiles.length === 0 && (
+                  <p className="text-[10px] text-primary mt-1 font-medium animate-pulse">
+                    Agrega al menos una foto para poder guardar
+                  </p>
+                )}
               </div>
 
               <button
@@ -920,7 +991,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 disabled={uploading || !pkgName || !pkgPrice || (pkgSelected.length === 0 && pkgNewFiles.length === 0)}
                 className="w-full bg-primary text-primary-foreground p-3 rounded-lg font-bold disabled:opacity-50"
               >
-                {uploading ? 'Creando...' : 'CREAR PAQUETE'}
+                {uploading ? 'Guardando...' : 'GUARDAR Y CREAR PAQUETE'}
               </button>
             </div>
           </Modal>
@@ -931,10 +1002,30 @@ function PhotosTab({ companionId }: { companionId: string }) {
       <AnimatePresence>
         {editingPackage && packages[editingPackage] && (
           <Modal onClose={() => { setEditingPackage(null); setPkgNewFiles([]); }}>
-            <h3 className="font-serif text-lg text-foreground mb-1">Editar paquete</h3>
-            <p className="text-primary text-sm font-medium mb-4">{editingPackage}</p>
+            <h3 className="font-serif text-lg text-foreground mb-4">Editar paquete</h3>
 
             <div className="space-y-4">
+              <div>
+                <label className="text-xs text-muted-foreground">Nombre del paquete</label>
+                <input
+                  className="w-full bg-background border border-border rounded-lg p-3 text-foreground outline-none text-sm mt-1"
+                  value={editPkgName} onChange={e => setEditPkgName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground">Precio del paquete completo</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-muted-foreground">$</span>
+                  <input
+                    type="number"
+                    className="flex-1 bg-background border border-border rounded-lg p-3 text-foreground font-bold outline-none"
+                    value={editPkgPrice} onChange={e => setEditPkgPrice(e.target.value)}
+                  />
+                  <span className="text-muted-foreground text-sm">MXN</span>
+                </div>
+              </div>
+
               <div>
                 <label className="text-xs text-muted-foreground mb-2 block">Fotos en este paquete</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -962,7 +1053,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 <label className="text-xs text-muted-foreground mb-2 block">Agregar mas fotos</label>
                 <label className="block bg-background border border-dashed border-border rounded-lg p-3 text-center cursor-pointer text-sm text-muted-foreground">
                   <Plus size={16} className="inline mr-1" />
-                  {pkgNewFiles.length > 0 ? `${pkgNewFiles.length} foto${pkgNewFiles.length > 1 ? 's' : ''} seleccionada${pkgNewFiles.length > 1 ? 's' : ''}` : 'Seleccionar fotos'}
+                  {pkgNewFiles.length > 0 ? `${pkgNewFiles.length} foto${pkgNewFiles.length > 1 ? 's' : ''} seleccionada` : 'Seleccionar fotos'}
                   <input type="file" accept="image/*" multiple className="hidden" onChange={e => { if (e.target.files) setPkgNewFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
                 </label>
                 {pkgNewFiles.length > 0 && (
@@ -983,19 +1074,13 @@ function PhotosTab({ companionId }: { companionId: string }) {
               </div>
 
               <div className="flex gap-2">
-                {pkgNewFiles.length > 0 && (
-                  <button
-                    onClick={async () => {
-                      const price = packages[editingPackage][0].price;
-                      await handleAddPhotosToPackage(editingPackage, pkgNewFiles, price);
-                      setPkgNewFiles([]);
-                    }}
-                    disabled={uploading}
-                    className="flex-1 bg-primary text-primary-foreground p-3 rounded-lg font-bold text-sm disabled:opacity-50"
-                  >
-                    {uploading ? 'Subiendo...' : `Agregar ${pkgNewFiles.length} foto${pkgNewFiles.length > 1 ? 's' : ''}`}
-                  </button>
-                )}
+                <button
+                  onClick={handleUpdatePackage}
+                  disabled={uploading || !editPkgName || !editPkgPrice}
+                  className="flex-1 bg-primary text-primary-foreground p-3 rounded-lg font-bold text-sm disabled:opacity-50"
+                >
+                  {uploading ? 'Guardando...' : 'GUARDAR CAMBIOS'}
+                </button>
                 <button
                   onClick={() => handleDeletePackage(editingPackage)}
                   className="px-4 p-3 rounded-lg bg-red-500/20 text-red-400 font-bold text-sm"
@@ -1003,6 +1088,12 @@ function PhotosTab({ companionId }: { companionId: string }) {
                   <Trash2 size={16} />
                 </button>
               </div>
+
+              {pkgNewFiles.length > 0 && (
+                <p className="text-[10px] text-muted-foreground text-center">
+                  * Las nuevas fotos se subirán al guardar los cambios
+                </p>
+              )}
             </div>
           </Modal>
         )}
@@ -1186,7 +1277,7 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
       onClick={onClose}
     >
       <motion.div
-        className="bg-card rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm border border-border max-h-[85vh] overflow-y-auto"
+        className="bg-card rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm border border-border max-h-[85vh] overflow-y-auto relative"
         initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
         onClick={e => e.stopPropagation()}
       >
