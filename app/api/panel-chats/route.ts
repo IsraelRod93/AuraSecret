@@ -42,3 +42,38 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const session = getSession(request);
+  if (!session) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
+  const { conversationId } = await request.json();
+  if (!conversationId) {
+    return NextResponse.json({ error: 'Missing conversationId' }, { status: 400 });
+  }
+
+  const sql = getDb();
+  try {
+    // verify ownership
+    const [conv] = await sql`
+      SELECT id FROM conversations
+      WHERE id = ${conversationId}::uuid AND companion_id = ${session.companionId}::uuid
+      LIMIT 1
+    `;
+    if (!conv) return NextResponse.json({ error: 'No encontrado o sin permiso' }, { status: 403 });
+
+    await sql`
+      DELETE FROM messages WHERE conversation_id = ${conversationId}::uuid
+    `;
+    await sql`
+      DELETE FROM conversations WHERE id = ${conversationId}::uuid
+    `;
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Failed';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}

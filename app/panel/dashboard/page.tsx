@@ -1183,6 +1183,28 @@ function ChatsTab({ companionId }: { companionId: string }) {
           <button onClick={() => setActiveChat(null)} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft size={20} />
           </button>
+          <div className="flex-1" />
+          <button
+            onClick={async () => {
+              if (!activeChat) return;
+              if (!confirm('Eliminar esta conversación?')) return;
+              try {
+                await fetch('/api/panel-chats', {
+                  method: 'DELETE',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ conversationId: activeChat.conversation_id }),
+                });
+                setActiveChat(null);
+                await loadChats();
+              } catch (e) {
+                alert('Error al eliminar conversación');
+              }
+            }}
+            className="text-red-400 p-2"
+            title="Eliminar conversación"
+          >
+            <Trash2 size={18} />
+          </button>
           <div>
             <p className="text-foreground font-medium text-sm">{activeChat.first_name || activeChat.username || 'Usuario'}</p>
             <p className="text-[10px] text-muted-foreground">{activeChat.message_count} mensajes</p>
