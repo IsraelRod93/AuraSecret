@@ -136,11 +136,13 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
           setAppUser(data.user);
         }
       } else {
-        // Fuera de Telegram: intentar sesión de usuario por cookie
-        const res = await fetch('/api/user-auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setAppUser(data.user);
+        // Fuera de Telegram: intentar sesión de usuario solo si hay cookie de sesión
+        if (document.cookie.includes('user_session=')) {
+          const res = await fetch('/api/user-auth/me');
+          if (res.ok) {
+            const data = await res.json();
+            setAppUser(data.user);
+          }
         }
       }
     } catch {
