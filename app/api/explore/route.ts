@@ -38,6 +38,20 @@ export async function GET(request: NextRequest) {
       `;
     }
 
+      // If still no items, return a list of recent active creators so the UI can
+      // surface new creators in the Discover screen.
+      if (!items || items.length === 0) {
+        const creators = await sql`
+          SELECT id, name, photo_url
+          FROM companions
+          WHERE status = 'active'
+          ORDER BY created_at DESC
+          LIMIT 50
+        `;
+
+        return NextResponse.json({ items: [], creators: creators.map(c => ({ id: c.id, name: c.name, photo: c.photo_url })) });
+      }
+
     return NextResponse.json({ items: items.map(i => ({ ...i, purchased: false })) });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed';
