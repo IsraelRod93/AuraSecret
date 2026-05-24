@@ -158,12 +158,12 @@ function WelcomeScreen({ onChoose, onContinue }: {
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <button className="btn-primary text-center" onClick={onContinue}>
+        <button className="btn-ghost text-center" onClick={onContinue}>
           <span className="inline-flex items-center gap-2">
-            <Sparkles size={14} /> Comenzar
+            <Sparkles size={14} /> Regístrate
           </span>
         </button>
-        <button className="btn-ghost text-center" onClick={() => onChoose("login")}>
+        <button className="btn-primary text-center" onClick={() => onChoose("login")}> 
           Ya tengo cuenta
         </button>
         <p className="text-center text-[10px] text-muted-foreground mt-2.5 tracking-wide">
