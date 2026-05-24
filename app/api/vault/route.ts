@@ -119,6 +119,7 @@ export async function GET(request: NextRequest) {
       ...item,
       purchased: purchasedIds.includes(item.id),
       file_url: purchasedIds.includes(item.id) ? item.file_url : null,
+      thumbnail_url: purchasedIds.includes(item.id) ? item.thumbnail_url : null,
     }));
 
     return NextResponse.json({ items: enriched });

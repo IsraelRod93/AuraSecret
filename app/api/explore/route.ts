@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ items: [], creators: creators.map(c => ({ id: c.id, name: c.name, photo: c.photo_url })) });
       }
 
-    return NextResponse.json({ items: items.map(i => ({ ...i, purchased: false })) });
+    return NextResponse.json({ items: items.map(i => ({ ...i, purchased: false, thumbnail_url: null })) });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed';
     return NextResponse.json({ error: message }, { status: 500 });
