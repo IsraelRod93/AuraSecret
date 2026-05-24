@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-async function verifyTokenEdge(token: string): Promise<boolean> {
+// Verifica tokens HMAC en runtime Edge (subtle crypto)
+async function verifyTokenEdge(token: string): Promise<any | null> {
   try {
     const secret = process.env.JWT_SECRET;
-    if (!secret) return false;
+    if (!secret) return null;
 
     const [header, body, signature] = token.split('.');
-    if (!header || !body || !signature) return false;
+    if (!header || !body || !signature) return null;
 
     const enc = new TextEncoder();
     const key = await crypto.subtle.importKey(
@@ -16,27 +17,58 @@ async function verifyTokenEdge(token: string): Promise<boolean> {
     const expected = btoa(String.fromCharCode(...new Uint8Array(sig)))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-    if (signature !== expected) return false;
+    if (signature !== expected) return null;
 
     const payload = JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/')));
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
 
-    return !!payload.companionId;
+    return payload;
   } catch {
-    return false;
+    return null;
   }
 }
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get('panel_session')?.value;
+  const { pathname } = request.nextUrl;
 
-  if (!token || !(await verifyTokenEdge(token))) {
-    return NextResponse.redirect(new URL('/panel/login', request.url));
+  // Rutas del panel (creadores)
+  if (pathname.startsWith('/panel')) {
+    const token = request.cookies.get('panel_session')?.value;
+    if (!token) {
+      return NextResponse.redirect(new URL('/panel/login', request.url));
+    }
+    const payload = await verifyTokenEdge(token);
+    if (!payload?.companionId) {
+      const res = NextResponse.redirect(new URL('/panel/login', request.url));
+      res.cookies.set('panel_session', '', { path: '/', maxAge: 0 });
+      return res;
+    }
+    return NextResponse.next();
+  }
+
+  // Rutas de usuario (clientes)
+  if (
+    pathname.startsWith('/chat') ||
+    pathname.startsWith('/chats') ||
+    pathname.startsWith('/explore') ||
+    pathname.startsWith('/vault')
+  ) {
+    const token = request.cookies.get('user_session')?.value;
+    if (!token) {
+      return NextResponse.redirect(new URL('/welcome', request.url));
+    }
+    const payload = await verifyTokenEdge(token);
+    if (!payload?.userId) {
+      const res = NextResponse.redirect(new URL('/welcome', request.url));
+      res.cookies.set('user_session', '', { path: '/', maxAge: 0 });
+      return res;
+    }
+    return NextResponse.next();
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/panel/dashboard/:path*'],
+  matcher: ['/panel/:path*', '/chat/:path*', '/chats/:path*', '/explore/:path*', '/vault/:path*'],
 };
