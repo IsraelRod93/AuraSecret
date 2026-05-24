@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 
 interface TelegramUser {
   id: number;
@@ -67,6 +67,7 @@ declare global {
         safeAreaInset?: { top: number; bottom: number; left: number; right: number };
         onEvent?: (event: string, handler: () => void) => void;
         offEvent?: (event: string, handler: () => void) => void;
+        showPopup?: (text: string, options?: any) => void;
       };
     };
   }
@@ -97,6 +98,35 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInTelegram, setIsInTelegram] = useState(false);
+  const [secureScreen, setSecureScreen] = useState(false);
+  const [securityMessage, setSecurityMessage] = useState('');
+  const warningTimerRef = useRef<number | null>(null);
+
+  const showSecurityWarning = (message: string) => {
+    setSecurityMessage(message);
+    setSecureScreen(true);
+    const tg = window.Telegram?.WebApp;
+    if (tg?.showPopup) {
+      tg.showPopup(message);
+    }
+    if (warningTimerRef.current) {
+      window.clearTimeout(warningTimerRef.current);
+    }
+    warningTimerRef.current = window.setTimeout(() => {
+      setSecurityMessage('');
+      setSecureScreen(false);
+      warningTimerRef.current = null;
+    }, 2800);
+  };
+
+  const activateSecureScreen = () => {
+    setSecureScreen(true);
+    setSecurityMessage((prev) => prev || 'Modo seguro activado: no está permitido grabar o capturar pantalla.');
+  };
+
+  const deactivateSecureScreen = () => {
+    setSecureScreen(false);
+  };
 
   const authenticate = async () => {
     try {
@@ -173,11 +203,63 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     authenticate();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'PrintScreen') {
+        event.preventDefault();
+        showSecurityWarning('Captura de pantalla no permitida en AuraSecret.');
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') {
+        activateSecureScreen();
+      } else {
+        deactivateSecureScreen();
+      }
+    };
+
+    const onBlur = () => {
+      activateSecureScreen();
+    };
+
+    const onFocus = () => {
+      deactivateSecureScreen();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+      if (warningTimerRef.current) {
+        window.clearTimeout(warningTimerRef.current);
+      }
+    };
   }, []);
 
   return (
     <TelegramContext.Provider value={{ telegramUser, appUser, isLoading, isInTelegram, refreshUser }}>
-      {children}
+      <div className="relative min-h-screen">
+        {children}
+        {secureScreen && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 text-center px-6 py-8">
+            <div className="max-w-lg rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-[0_0_0_20px_rgba(0,0,0,0.12)] backdrop-blur-xl">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/60">
+                Seguridad activa
+              </p>
+              <p className="mt-3 text-lg font-semibold text-white">
+                {securityMessage || 'Modo seguro activado. No está permitido grabar pantalla.'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </TelegramContext.Provider>
   );
 }
