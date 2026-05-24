@@ -14,6 +14,31 @@ export default function PanelLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const handleTelegram = async () => {
+    try {
+      const tg = (window as any).Telegram?.WebApp;
+      const botUrl = 'https://t.me/AuraSecretx_bot';
+
+      if (tg?.initData) {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: tg.initData }),
+        });
+        if (res.ok) {
+          router.push('/panel/dashboard');
+          return;
+        }
+        window.location.reload();
+      } else {
+        window.location.href = botUrl;
+      }
+    } catch {
+      // fallback
+      window.location.href = 'https://t.me/AuraSecretx_bot';
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -123,7 +148,7 @@ export default function PanelLogin() {
         </span>
       </div>
 
-      <button className="btn-ghost w-full relative z-10">
+      <button className="btn-ghost w-full relative z-10" onClick={handleTelegram}>
         <span className="inline-flex items-center gap-2">
           <Sparkles size={14} /> Continuar con Telegram
         </span>

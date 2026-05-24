@@ -105,6 +105,29 @@ function WelcomeScreen({ onChoose, onContinue }: {
   onChoose: (action: "login", role?: undefined) => void;
   onContinue: () => void;
 }) {
+  const router = useRouter();
+  const handleTelegram = async () => {
+    try {
+      const tg = (window as any).Telegram?.WebApp;
+      const botUrl = 'https://t.me/AuraSecretx_bot';
+      if (tg?.initData) {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: tg.initData }),
+        });
+        if (res.ok) {
+          router.replace('/');
+          return;
+        }
+        window.location.reload();
+      } else {
+        window.location.href = botUrl;
+      }
+    } catch {
+      window.location.href = 'https://t.me/AuraSecretx_bot';
+    }
+  };
   return (
     <div className="min-h-screen flex flex-col px-6 pt-[90px] pb-7 justify-between">
       <div className="text-center">
@@ -722,7 +745,7 @@ function LoginScreen({ onBack, onSuccess }: {
         </span>
       </div>
 
-      <button className="btn-ghost text-center inline-flex items-center justify-center gap-2">
+      <button className="btn-ghost text-center inline-flex items-center justify-center gap-2" onClick={handleTelegram}>
         <Sparkles size={14} /> Continuar con Telegram
       </button>
     </div>
