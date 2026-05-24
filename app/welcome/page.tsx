@@ -654,10 +654,34 @@ function LoginScreen({ onBack, onSuccess }: {
   onBack: () => void;
   onSuccess: (role: 'companion' | 'user') => void;
 }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleTelegram = async () => {
+    try {
+      const tg = (window as any).Telegram?.WebApp;
+      const botUrl = 'https://t.me/AuraSecretx_bot';
+      if (tg?.initData) {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: tg.initData }),
+        });
+        if (res.ok) {
+          router.replace('/');
+          return;
+        }
+        window.location.reload();
+      } else {
+        window.location.href = botUrl;
+      }
+    } catch {
+      window.location.href = 'https://t.me/AuraSecretx_bot';
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.includes("@") || pass.length < 6) return;
