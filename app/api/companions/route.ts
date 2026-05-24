@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { getDb } from '@/lib/db';
 import { getRequestUserId } from '@/lib/get-user-id';
 
