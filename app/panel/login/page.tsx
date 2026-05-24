@@ -13,8 +13,10 @@ export default function PanelLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [telegramLoading, setTelegramLoading] = useState(false);
 
   const handleTelegram = async () => {
+    setTelegramLoading(true);
     try {
       const tg = (window as any).Telegram?.WebApp;
       const botUrl = 'https://t.me/AuraSecretx_bot';
@@ -36,6 +38,8 @@ export default function PanelLogin() {
     } catch {
       // fallback
       window.location.href = 'https://t.me/AuraSecretx_bot';
+    } finally {
+      setTelegramLoading(false);
     }
   };
 
@@ -148,9 +152,14 @@ export default function PanelLogin() {
         </span>
       </div>
 
-      <button className="btn-ghost w-full relative z-10" onClick={handleTelegram}>
+      <button
+        className="btn-ghost w-full relative z-10"
+        onClick={handleTelegram}
+        disabled={telegramLoading}
+        style={{ opacity: telegramLoading ? 0.45 : 1 }}
+      >
         <span className="inline-flex items-center gap-2">
-          <Sparkles size={14} /> Continuar con Telegram
+          <Sparkles size={14} /> {telegramLoading ? 'Conectando...' : 'Continuar con Telegram'}
         </span>
       </button>
       

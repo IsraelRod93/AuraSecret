@@ -106,7 +106,9 @@ function WelcomeScreen({ onChoose, onContinue }: {
   onContinue: () => void;
 }) {
   const router = useRouter();
+  const [telegramLoading, setTelegramLoading] = useState(false);
   const handleTelegram = async () => {
+    setTelegramLoading(true);
     try {
       const tg = (window as any).Telegram?.WebApp;
       const botUrl = 'https://t.me/AuraSecretx_bot';
@@ -126,6 +128,8 @@ function WelcomeScreen({ onChoose, onContinue }: {
       }
     } catch {
       window.location.href = 'https://t.me/AuraSecretx_bot';
+    } finally {
+      setTelegramLoading(false);
     }
   };
   return (
@@ -658,9 +662,11 @@ function LoginScreen({ onBack, onSuccess }: {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
+  const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleTelegram = async () => {
+    setTelegramLoading(true);
     try {
       const tg = (window as any).Telegram?.WebApp;
       const botUrl = 'https://t.me/AuraSecretx_bot';
@@ -680,6 +686,8 @@ function LoginScreen({ onBack, onSuccess }: {
       }
     } catch {
       window.location.href = 'https://t.me/AuraSecretx_bot';
+    } finally {
+      setTelegramLoading(false);
     }
   };
 
@@ -769,8 +777,13 @@ function LoginScreen({ onBack, onSuccess }: {
         </span>
       </div>
 
-      <button className="btn-ghost text-center inline-flex items-center justify-center gap-2" onClick={handleTelegram}>
-        <Sparkles size={14} /> Continuar con Telegram
+      <button
+        className="btn-ghost text-center inline-flex items-center justify-center gap-2"
+        onClick={handleTelegram}
+        disabled={telegramLoading}
+        style={{ opacity: telegramLoading ? 0.45 : 1 }}
+      >
+        <Sparkles size={14} /> {telegramLoading ? 'Conectando...' : 'Continuar con Telegram'}
       </button>
     </div>
   );
