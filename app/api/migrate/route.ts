@@ -10,33 +10,14 @@ export async function POST(request: NextRequest) {
   const sql = getDb();
 
   try {
-    await sql`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'companions' AND column_name = 'email') THEN
-          ALTER TABLE companions ADD COLUMN email TEXT UNIQUE;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'companions' AND column_name = 'password_hash') THEN
-          ALTER TABLE companions ADD COLUMN password_hash TEXT;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'gallery_views') THEN
-          ALTER TABLE users ADD COLUMN gallery_views INTEGER DEFAULT 0;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email') THEN
-          ALTER TABLE users ADD COLUMN email TEXT UNIQUE;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'password_hash') THEN
-          ALTER TABLE users ADD COLUMN password_hash TEXT;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'age') THEN
-          ALTER TABLE users ADD COLUMN age INTEGER;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'looking_for') THEN
-          ALTER TABLE users ADD COLUMN looking_for TEXT;
-        END IF;
-        ALTER TABLE users ALTER COLUMN telegram_id DROP NOT NULL;
-      END $$;
-    `;
+    await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS email TEXT UNIQUE`;
+    await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS gallery_views INTEGER DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS age INTEGER`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS looking_for TEXT`;
+    await sql`ALTER TABLE users ALTER COLUMN telegram_id DROP NOT NULL`;
 
     await sql`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_purchases_payment_id
