@@ -48,23 +48,21 @@ export function VaultGrid({ items, onPurchase, loading }: VaultGridProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <>
-                  {item.thumbnail_url ? (
-                    <img
-                      src={item.thumbnail_url}
-                      alt="Preview"
-                      className="w-full h-full object-cover blur-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-card flex items-center justify-center">
-                      <Camera className="w-8 h-8 text-muted-foreground" />
+                <div className="w-full h-full bg-card relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
+                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-3 p-4 text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/30">
+                      <Lock className="w-6 h-6 text-white" />
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
-                    <Lock className="w-6 h-6 text-white mb-2" />
-                    <span className="text-white font-bold">${(item.price / 100).toFixed(0)} MXN</span>
+                    <p className="text-sm font-semibold text-white">Contenido bloqueado</p>
+                    <p className="text-xs text-muted-foreground">Compra para desbloquear</p>
+                    <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-white">
+                      <Lock className="w-4 h-4" />
+                      <span className="font-semibold">${(item.price / 100).toFixed(0)} MXN</span>
+                    </div>
                   </div>
-                </>
+                </div>
               )}
 
               {!item.purchased && (
