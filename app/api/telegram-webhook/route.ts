@@ -46,19 +46,20 @@ export async function POST(request: NextRequest) {
       switch (payload.type) {
         case 'gallery_unlock': {
           if (payload.userId) {
+            const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
             await sql`
-              UPDATE users SET options_unlocked = true, gallery_views = 0 WHERE id = ${payload.userId}::uuid
+              UPDATE users SET gallery_expires_at = ${expiresAt}, gallery_views = 0 WHERE id = ${payload.userId}::uuid
             `;
 
-            await sendMessage(chatId, "<b>Galeria desbloqueada!</b> ✨\n\nHe abierto las puertas de mi galeria secreta para ti. Vuelve a la app y descubre a las diosas que estaban esperando conocerte.");
+            await sendMessage(chatId, "<b>Suscripcion de Galeria activa!</b> ✨\n\nTienes acceso ilimitado para descubrir nuevas conexiones durante los proximos 30 dias. ¡Vuelve a la app y encuentra a tu match!");
 
             const [payer] = await sql`
               SELECT referred_by FROM users WHERE id = ${payload.userId}::uuid LIMIT 1
             `;
             if (payer?.referred_by) {
               await sql`
-                UPDATE users SET options_unlocked = true
-                WHERE id = ${payer.referred_by} AND options_unlocked = false
+                UPDATE users SET gallery_expires_at = ${expiresAt}
+                WHERE id = ${payer.referred_by} AND (gallery_expires_at IS NULL OR gallery_expires_at < NOW())
               `;
             }
           }

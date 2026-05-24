@@ -397,9 +397,9 @@ function GalleryPage() {
         onPay={handlePayForMore}
         loading={payLoading}
         title="El destino tiene mas para ti"
-        description="Desbloquea mas conexiones especiales"
-        price="50 Stars"
-        buttonText="VER MAS OPCIONES"
+        description="Suscribete para ver perfiles ilimitados por un mes"
+        price="150 Stars"
+        buttonText="SUSCRIBIRME AHORA"
       />
     </div>
   );

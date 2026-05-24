@@ -68,7 +68,7 @@ export function PaywallModal({
             </div>
 
             <div className="text-3xl font-bold text-primary mb-1">{price}</div>
-            <p className="text-muted-foreground text-xs mb-5">Pago unico — acceso permanente</p>
+            <p className="text-muted-foreground text-xs mb-5">Suscripcion mensual — Acceso total</p>
 
             <button
               onClick={onPay}

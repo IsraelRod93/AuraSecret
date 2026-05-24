@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS age INTEGER`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS looking_for TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS gallery_expires_at TIMESTAMP WITH TIME ZONE`;
     await sql`ALTER TABLE users ALTER COLUMN telegram_id DROP NOT NULL`;
 
     await sql`

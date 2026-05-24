@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
     switch (type) {
       case 'gallery_unlock': {
         invoiceUrl = await createInvoiceLink({
-          title: 'Desbloquear Galeria',
-          description: 'Descubre mas conexiones especiales en Aura',
+          title: 'Suscripcion de Galeria',
+          description: 'Acceso ilimitado para descubrir conexiones por 1 mes',
           payload: `g:${userId}`,
-          prices: [{ label: 'Mas opciones', amount: STAR_PRICES.GALLERY_UNLOCK }],
+          prices: [{ label: 'Suscripcion mensual', amount: STAR_PRICES.GALLERY_UNLOCK }],
         });
         break;
       }

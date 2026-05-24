@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     if (userId) {
       const [user] = await sql`
-        SELECT options_unlocked, gallery_views FROM users WHERE id = ${userId}::uuid LIMIT 1
+        SELECT options_unlocked, gallery_views, gallery_expires_at FROM users WHERE id = ${userId}::uuid LIMIT 1
       `;
 
       const views = (user?.gallery_views || 0) + 1;
@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
         UPDATE users SET gallery_views = ${views} WHERE id = ${userId}::uuid
       `;
 
-      if (views > 1 && !user?.options_unlocked) {
+      const isUnrestricted = user?.options_unlocked || (user?.gallery_expires_at && new Date(user.gallery_expires_at) > new Date());
+
+      if (views > 1 && !isUnrestricted) {
         return NextResponse.json({ batches: [], sessionId: null, paywall: true });
       }
     }
