@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sparkles, Globe, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { OracleOrb } from '@/components/oracle-orb';
 import { CelestialBackground } from '@/components/celestial-background';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function PanelLogin() {
   const router = useRouter();

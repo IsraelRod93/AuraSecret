@@ -9,6 +9,7 @@ import {
 import { CelestialBackground } from "@/components/celestial-background";
 import { OracleOrb } from "@/components/oracle-orb";
 import { useTelegram } from "@/components/telegram-provider";
+import { Spinner } from "@/components/ui/spinner";
 
 type Stage = "welcome" | "choose" | "register" | "login" | "success";
 
@@ -783,7 +784,8 @@ function LoginScreen({ onBack, onSuccess }: {
         disabled={telegramLoading}
         style={{ opacity: telegramLoading ? 0.45 : 1 }}
       >
-        <Sparkles size={14} /> {telegramLoading ? 'Conectando...' : 'Continuar con Telegram'}
+        {telegramLoading ? <Spinner className="h-4 w-4" /> : <Sparkles size={14} />}
+        {telegramLoading ? 'Conectando...' : 'Continuar con Telegram'}
       </button>
     </div>
   );
