@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       try {
         await sendMessage(
           user.telegram_id,
-          '<b>Tu Premium expira pronto!</b>\n\nTu acceso ilimitado termina en menos de 24 horas. Renueva ahora para no perder tus conversaciones y conexiones especiales.'
+          '<b>Tu Premium expira pronto!</b>\n\nTu acceso ilimitado termina en menos de 24 horas. Renueva ahora para no perder tus conversaciones y conexiones especiales. 🔥'
         );
         renewalsSent++;
       } catch {
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
       const names = newContent.map(c => c.companion_name).join(', ');
       const total = newContent.reduce((s, c) => s + c.count, 0);
-      const contentMsg = `<b>Contenido nuevo!</b> 🔥\n\n${names} ${newContent.length > 1 ? 'subieron' : 'subio'} ${total} foto${total > 1 ? 's' : ''} exclusiva${total > 1 ? 's' : ''} a su baul. No te las pierdas.`;
+      const contentMsg = `<b>Contenido nuevo!</b> 🔥\n\n${names} ${newContent.length > 1 ? 'subieron' : 'subió'} ${total} foto${total > 1 ? 's' : ''} exclusiva${total > 1 ? 's' : ''} a su baúl. ¡No te las pierdas!`;
 
       for (const sub of activeSubscribers) {
         try {

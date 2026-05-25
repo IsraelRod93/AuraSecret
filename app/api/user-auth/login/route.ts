@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/db';
 import { signUserToken, setUserSessionCookie } from '@/lib/user-auth';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   const { email, password } = await request.json();
 
   if (!email || !password) {
     return NextResponse.json({ error: 'Correo y contraseña requeridos' }, { status: 400 });
+  }
+
+  if (!await checkRateLimit(`login:${email.toLowerCase().trim()}`, 5)) {
+    return NextResponse.json({ error: 'Demasiados intentos. Espera un minuto.' }, { status: 429 });
   }
 
   const sql = getDb();

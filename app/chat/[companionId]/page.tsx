@@ -134,7 +134,7 @@ export default function CompanionChatPage({
           {
             id: (Date.now() + 2).toString(),
             role: "companion",
-            content: "Mensaje enviado. Te respondera pronto...",
+            content: "Mensaje enviado. Te responderá pronto...",
           },
         ]);
       }
@@ -144,7 +144,7 @@ export default function CompanionChatPage({
         {
           id: Date.now().toString(),
           role: "companion",
-          content: "Error de conexion. Intentalo de nuevo.",
+          content: "Error de conexión. Inténtalo de nuevo.",
         },
       ]);
     } finally {
@@ -204,7 +204,7 @@ export default function CompanionChatPage({
           <button
             type="button"
             onClick={() => router.push("/chats")}
-            aria-label="Volver al menu"
+            aria-label="Volver al menú"
             className="bg-transparent border-none cursor-pointer flex items-center justify-center shrink-0"
             style={{
               color: "var(--fg-soft)",
@@ -287,7 +287,7 @@ export default function CompanionChatPage({
               style={{ border: "2px solid var(--primary-soft)" }}
             />
             <p className="font-serif text-lg text-foreground italic">
-              Comienza tu conversacion con {companion.name}
+              Comienza tu conversación con {companion.name}
             </p>
             {!isSubscribed && remaining !== null && (
               <p className="text-muted-foreground text-sm mt-2">

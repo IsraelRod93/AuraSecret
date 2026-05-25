@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
               UPDATE users SET gallery_expires_at = ${expiresAt}, gallery_views = 0 WHERE id = ${payload.userId}::uuid
             `;
 
-            await sendMessage(chatId, "<b>Suscripcion de Galeria activa!</b> ✨\n\nTienes acceso ilimitado para descubrir nuevas conexiones durante los proximos 30 dias. ¡Vuelve a la app y encuentra a tu match!");
+            await sendMessage(chatId, "<b>Suscripción de Galería activa!</b> ✨\n\nTienes acceso ilimitado para descubrir nuevas conexiones durante los próximos 30 días. ¡Vuelve a la app y encuentra a tu match!");
 
             const [payer] = await sql`
               SELECT referred_by FROM users WHERE id = ${payload.userId}::uuid LIMIT 1
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
             `;
 
             const planLabel = payload.plan === 'monthly' ? '1 mes' : '1 semana';
-            await sendMessage(chatId, `<b>Bienvenido al Circulo Intimo!</b> 🔥\n\nTienes acceso Premium por ${planLabel}. Mis amigas y yo estamos ansiosas por hablar contigo sin limites.`);
+            await sendMessage(chatId, `<b>Bienvenido al Círculo Íntimo!</b> 🔥\n\nTienes acceso Premium por ${planLabel}. Mis amigas y yo estamos ansiosas por hablar contigo sin límites.`);
 
             // Bonus: 7 extra days for whoever referred this user
             const [payer] = await sql`
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
               `;
             }
 
-            await sendMessage(chatId, "<b>Tesoro desbloqueado...</b> 🔓\n\nLo que acabas de adquirir es solo para tus ojos. Disfrutalo en tu boveda privada.");
+            await sendMessage(chatId, "<b>Tesoro desbloqueado...</b> 🔓\n\nLo que acabas de adquirir es solo para tus ojos. Disfrútalo en tu bóveda privada.");
             trackEvent('payment_completed', payload.userId, { type: 'vault_purchase', vaultItemId: payload.vaultItemId, amount: payment.total_amount });
           }
           break;
@@ -218,7 +218,7 @@ async function handleStart(sql: ReturnType<typeof getDb>, chatId: number, firstN
 
   await sendMessage(
     chatId,
-    `<b>Bienvenido a AuraSecret</b>, ${firstName} ✨\n\nAqui encontraras conexiones exclusivas con mujeres reales y fascinantes.\n\n🔥 <b>${names}</b> y mas te estan esperando.\n\n12 mensajes gratis para que conozcas a quien quieras. Despues, tu decides si quieres mas.`,
+    `<b>Bienvenido a AuraSecret</b>, ${firstName} ✨\n\nAquí encontrarás conexiones exclusivas con mujeres reales y fascinantes.\n\n🔥 <b>${names}</b> y más te están esperando.\n\n12 mensajes gratis para que conozcas a quien quieras. Después, tú decides si quieres más.`,
     {
       inline_keyboard: [
         [{ text: '💫 Descubrir conexiones', web_app: { url: WEBAPP_URL } }],
