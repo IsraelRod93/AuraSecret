@@ -10,9 +10,10 @@ interface SubscriptionModalProps {
   onSubscribe: (plan: 'weekly' | 'monthly') => void;
   loading?: boolean;
   companionName?: string;
+  companionPhoto?: string;
 }
 
-export function SubscriptionModal({ open, onClose, onSubscribe, loading, companionName }: SubscriptionModalProps) {
+export function SubscriptionModal({ open, onClose, onSubscribe, loading, companionName, companionPhoto }: SubscriptionModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly'>('monthly');
 
   return (
@@ -39,9 +40,29 @@ export function SubscriptionModal({ open, onClose, onSubscribe, loading, compani
               <X className="w-5 h-5" />
             </button>
 
-            <Crown className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
+            {companionPhoto ? (
+              <div className="relative w-16 h-16 mx-auto mb-3">
+                <img
+                  src={companionPhoto}
+                  alt={companionName || ""}
+                  className="w-16 h-16 rounded-full object-cover mx-auto"
+                  style={{ border: "2px solid var(--primary-soft)" }}
+                />
+                <div
+                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full grid place-items-center"
+                  style={{ background: "var(--gold)" }}
+                >
+                  <Crown className="w-3 h-3 text-white" />
+                </div>
+              </div>
+            ) : (
+              <Crown className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
+            )}
+
             <h3 className="font-serif text-2xl text-foreground mb-1">
-              {companionName ? `${companionName} quiere seguir hablando` : 'Desbloquea mensajes ilimitados'}
+              {companionName
+                ? `Sigue hablando con ${companionName}`
+                : 'Desbloquea mensajes ilimitados'}
             </h3>
             <p className="text-muted-foreground text-sm mb-5">
               No dejes que esta conexion se pierda

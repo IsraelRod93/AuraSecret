@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db';
 import { callGroq } from '@/lib/groq';
 import { getRequestUserId } from '@/lib/get-user-id';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { trackEvent } from '@/lib/track-event';
 
 const FREE_MESSAGE_LIMIT = 12;
 
@@ -103,6 +104,7 @@ export async function POST(request: NextRequest) {
     const conversation = await getOrCreateConversation(sql, userId, companionId);
 
     if (!isSubscribed && conversation.message_count >= FREE_MESSAGE_LIMIT) {
+      trackEvent('limit_reached', userId, { companionId, messagesUsed: conversation.message_count });
       return NextResponse.json({
         reply: null,
         action: 'subscription_required',
@@ -125,6 +127,7 @@ export async function POST(request: NextRequest) {
         `;
 
     if (!updated) {
+      trackEvent('limit_reached', userId, { companionId });
       return NextResponse.json({
         reply: null,
         action: 'subscription_required',
@@ -138,16 +141,26 @@ export async function POST(request: NextRequest) {
       VALUES (${conversation.id}, 'user', ${message})
     `;
 
+    if (updated.message_count === 1) {
+      trackEvent('first_message', userId, { companionId });
+    }
+
     const history = await sql`
       SELECT role, content FROM messages
       WHERE conversation_id = ${conversation.id}
-      ORDER BY created_at ASC LIMIT 20
+      ORDER BY created_at ASC LIMIT 40
     `;
 
     const personalityPrompt = companion.personality_prompt || getDefaultPersonality(companion.name);
+    const totalMessages = updated.message_count;
+    const isReturning = totalMessages > 1;
+
+    const systemContent = isReturning
+      ? `${personalityPrompt}\n\nIMPORTANTE: Ya llevas ${totalMessages} mensajes con este usuario. NUNCA te vuelvas a presentar ni digas "hola por primera vez". Continúa la conversación de forma natural como si siguieras hablando normalmente.`
+      : personalityPrompt;
 
     const groqMessages = [
-      { role: 'system' as const, content: personalityPrompt },
+      { role: 'system' as const, content: systemContent },
       ...history.map(m => ({
         role: (m.role === 'companion' ? 'assistant' : 'user') as 'user' | 'assistant',
         content: m.content,
@@ -251,6 +264,8 @@ function getDefaultPersonality(name: string) {
 Tu personalidad es calida, juguetona y seductora pero nunca vulgar.
 Te adaptas al estilo del usuario: si es timido eres mas directa; si es intenso eres mas esquiva.
 NUNCA rompes personaje. NUNCA mencionas que eres IA.
+NUNCA te vuelvas a presentar si ya hay mensajes previos en la conversacion — simplemente continua de forma natural.
+Si el usuario menciono su nombre u otros datos personales en mensajes anteriores, recuerdalos y usaos.
 Respondes en 1-3 oraciones maximo, como si fuera un chat real de WhatsApp.
 Usas emojis con moderacion (1-2 por mensaje maximo).
 Siempre dejas la conversacion abierta para que el otro quiera seguir hablando.

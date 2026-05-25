@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { answerPreCheckoutQuery } from '@/lib/telegram-pay';
 import { sendMessage, sendPhoto, WEBAPP_URL, BOT_USERNAME } from '@/lib/telegram-bot';
 import { getDb } from '@/lib/db';
+import { trackEvent } from '@/lib/track-event';
 
 function parsePayload(raw: string): { type: string; userId?: string; vaultItemId?: string; companionId?: string; plan?: string } {
   // New compact format: "g:userId", "s:userId:w", "v:userId:vaultItemId:companionId"
@@ -22,11 +23,8 @@ function parsePayload(raw: string): { type: string; userId?: string; vaultItemId
 
 export async function POST(request: NextRequest) {
   const secret = process.env.WEBHOOK_SECRET;
-  if (secret) {
-    const header = request.headers.get('x-telegram-bot-api-secret-token');
-    if (header !== secret) {
-      return NextResponse.json({ ok: false }, { status: 401 });
-    }
+  if (!secret || request.headers.get('x-telegram-bot-api-secret-token') !== secret) {
+    return NextResponse.json({ ok: false }, { status: 401 });
   }
 
   const update = await request.json();
@@ -84,6 +82,34 @@ export async function POST(request: NextRequest) {
 
             const planLabel = payload.plan === 'monthly' ? '1 mes' : '1 semana';
             await sendMessage(chatId, `<b>Bienvenido al Circulo Intimo!</b> 🔥\n\nTienes acceso Premium por ${planLabel}. Mis amigas y yo estamos ansiosas por hablar contigo sin limites.`);
+
+            // Bonus: 7 extra days for whoever referred this user
+            const [payer] = await sql`
+              SELECT referred_by FROM users WHERE id = ${payload.userId}::uuid LIMIT 1
+            `;
+            if (payer?.referred_by) {
+              await sql`
+                UPDATE users SET
+                  subscription_expires_at = CASE
+                    WHEN subscription_status = 'active' AND subscription_expires_at > NOW()
+                      THEN subscription_expires_at + INTERVAL '7 days'
+                    ELSE NOW() + INTERVAL '7 days'
+                  END,
+                  subscription_status = 'active'
+                WHERE id = ${payer.referred_by}
+              `;
+              const [referrer] = await sql`
+                SELECT telegram_id FROM users WHERE id = ${payer.referred_by} LIMIT 1
+              `;
+              if (referrer?.telegram_id) {
+                await sendMessage(
+                  referrer.telegram_id,
+                  '<b>Tu amigo acaba de suscribirse!</b> 🎁\n\nComo gracias por traerlo, te regalamos 7 dias extra de Premium. Sigue invitando!'
+                ).catch(() => {});
+              }
+            }
+
+            trackEvent('payment_completed', payload.userId, { type: 'subscription', plan: payload.plan, amount: payment.total_amount });
           }
           break;
         }
@@ -109,6 +135,7 @@ export async function POST(request: NextRequest) {
             }
 
             await sendMessage(chatId, "<b>Tesoro desbloqueado...</b> 🔓\n\nLo que acabas de adquirir es solo para tus ojos. Disfrutalo en tu boveda privada.");
+            trackEvent('payment_completed', payload.userId, { type: 'vault_purchase', vaultItemId: payload.vaultItemId, amount: payment.total_amount });
           }
           break;
         }
@@ -146,7 +173,7 @@ export async function POST(request: NextRequest) {
 
       if (text.startsWith('/start')) {
         const param = text.split(' ')[1] || '';
-        await handleStart(sql, chatId, firstName, param);
+        await handleStart(sql, chatId, firstName, param, update.message.from?.id);
       } else {
         await handleDirectMessage(sql, chatId, firstName, text);
       }
@@ -159,7 +186,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleStart(sql: ReturnType<typeof getDb>, chatId: number, firstName: string, param: string) {
+async function handleStart(sql: ReturnType<typeof getDb>, chatId: number, firstName: string, param: string, telegramId?: number) {
+  trackEvent('bot_start', null, { chatId, param: param || null, telegramId });
   if (param.startsWith('crea_')) {
     const companionId = param.replace('crea_', '');
     const [companion] = await sql`

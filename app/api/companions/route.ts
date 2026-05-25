@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
       const isUnrestricted = user?.options_unlocked || (user?.gallery_expires_at && new Date(user.gallery_expires_at) > new Date());
 
-      if (views > 1 && !isUnrestricted) {
+      if (views > 3 && !isUnrestricted) {
         return NextResponse.json({ batches: [], sessionId: null, paywall: true });
       }
     }

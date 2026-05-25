@@ -12,6 +12,8 @@ interface PaywallModalProps {
   description?: string;
   price?: string;
   buttonText?: string;
+  referralLink?: string;
+  onShare?: () => void;
 }
 
 export function PaywallModal({
@@ -23,6 +25,8 @@ export function PaywallModal({
   description = "Desbloquea la galeria completa y descubre quien te esta buscando",
   price = "150 Stars",
   buttonText = "DESBLOQUEAR GALERIA",
+  referralLink,
+  onShare,
 }: PaywallModalProps) {
   return (
     <AnimatePresence>
@@ -77,6 +81,31 @@ export function PaywallModal({
             >
               {loading ? 'Procesando...' : buttonText}
             </button>
+
+            {referralLink && onShare && (
+              <>
+                <div className="flex items-center gap-2 my-4">
+                  <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+                  <span className="text-xs text-muted-foreground">o</span>
+                  <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+                </div>
+                <button
+                  onClick={onShare}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all border"
+                  style={{
+                    border: "1px solid oklch(0.55 0.18 300 / 0.5)",
+                    color: "var(--primary)",
+                    background: "oklch(0.55 0.18 300 / 0.08)",
+                  }}
+                >
+                  <Users className="w-4 h-4" />
+                  Invita 1 amigo y desbloquea gratis
+                </button>
+                <p className="text-[11px] text-muted-foreground mt-1.5">
+                  Se desbloquea cuando tu amigo se una
+                </p>
+              </>
+            )}
 
             <button
               onClick={onClose}

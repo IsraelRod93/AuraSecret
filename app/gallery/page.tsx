@@ -40,11 +40,18 @@ function GalleryPage() {
   const [payLoading, setPayLoading] = useState(false);
   const [showMatch, setShowMatch] = useState<Companion | null>(null);
   const [dragX, setDragX] = useState(0);
+  const [referralLink, setReferralLink] = useState<string | null>(null);
   const isDown = useRef(false);
   const startX = useRef(0);
 
   useEffect(() => {
     loadCompanions();
+    if (appUser?.id) {
+      fetch('/api/referral')
+        .then(r => r.json())
+        .then(d => { if (d.referralLink) setReferralLink(d.referralLink); })
+        .catch(() => {});
+    }
   }, [appUser]);
 
   const loadCompanions = async () => {
@@ -111,6 +118,19 @@ function GalleryPage() {
       advanceCard(dir as 1 | -1);
     } else {
       setDragX(0);
+    }
+  };
+
+  const handleShare = () => {
+    if (!referralLink) return;
+    const tg = (window as any).Telegram?.WebApp;
+    const shareText = 'Unete a AuraSecret — conexiones exclusivas te esperan';
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`);
+    } else {
+      navigator.clipboard.writeText(referralLink)
+        .then(() => alert('Link copiado al portapapeles'))
+        .catch(() => {});
     }
   };
 
@@ -400,6 +420,8 @@ function GalleryPage() {
         description="Suscribete para ver perfiles ilimitados por un mes"
         price="150 Stars"
         buttonText="SUSCRIBIRME AHORA"
+        referralLink={referralLink || undefined}
+        onShare={referralLink ? handleShare : undefined}
       />
     </div>
   );

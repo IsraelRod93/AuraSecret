@@ -49,10 +49,11 @@ export default function CompanionChatPage({
   }, [companionId, appUser]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    // Instant scroll when loading history, smooth for new messages
+    const isHistory = messages.some(m => m.id.startsWith("hist-"));
+    el.scrollTo({ top: el.scrollHeight, behavior: isHistory ? "instant" : "smooth" });
   }, [messages]);
 
   const loadChat = async () => {
@@ -441,6 +442,7 @@ export default function CompanionChatPage({
         onSubscribe={handleSubscribe}
         loading={subLoading}
         companionName={companion?.name}
+        companionPhoto={companion?.photo_url}
       />
     </div>
   );

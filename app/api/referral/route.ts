@@ -22,14 +22,14 @@ export async function GET(request: NextRequest) {
     const referralCode = `ref_${user.telegram_id}`;
     const referralLink = `https://t.me/AuraSecretx_bot?start=${referralCode}`;
     const count = user.referral_count || 0;
-    const rewardUnlocked = count >= 3 || user.options_unlocked;
+    const rewardUnlocked = count >= 1 || user.options_unlocked;
 
     return NextResponse.json({
       referralLink,
       referralCode,
       referralCount: count,
       rewardUnlocked,
-      nextRewardAt: rewardUnlocked ? null : 3 - count,
+      nextRewardAt: rewardUnlocked ? null : 1 - count,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed';

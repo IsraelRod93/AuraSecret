@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateTelegramInitData } from '@/lib/telegram';
 import { getDb } from '@/lib/db';
 import { signUserToken, setUserSessionCookie } from '@/lib/user-auth';
+import { sendMessage, WEBAPP_URL } from '@/lib/telegram-bot';
+import { trackEvent } from '@/lib/track-event';
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,10 +67,29 @@ export async function POST(request: NextRequest) {
     `;
 
     if (referrerId) {
-      await sql`
-        UPDATE users SET referral_count = COALESCE(referral_count, 0) + 1
+      const [updatedReferrer] = await sql`
+        UPDATE users
+        SET
+          referral_count = COALESCE(referral_count, 0) + 1,
+          options_unlocked = true
         WHERE id = ${referrerId}
+        RETURNING referral_count, telegram_id
       `;
+
+      // Notify referrer on their first successful referral
+      if (updatedReferrer?.referral_count === 1 && updatedReferrer.telegram_id) {
+        sendMessage(
+          updatedReferrer.telegram_id,
+          '<b>Galeria desbloqueada!</b> 🎉\n\nTu amigo acaba de unirse con tu enlace. La galeria completa es tuya! Vuelve a la app y descubre sin limites.',
+          {
+            inline_keyboard: [[
+              { text: '💫 Abrir galeria', web_app: { url: WEBAPP_URL } }
+            ]]
+          }
+        ).catch(() => {});
+      }
+
+      trackEvent('referral_join', newUser.id, { referrerId });
     }
 
     const token = signUserToken({ userId: newUser.id });

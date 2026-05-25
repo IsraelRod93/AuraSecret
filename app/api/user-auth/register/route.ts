@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getDb, ensureUserSchema } from '@/lib/db';
 import { signUserToken, setUserSessionCookie } from '@/lib/user-auth';
+import { validateTelegramInitData } from '@/lib/telegram';
 
 export async function POST(request: NextRequest) {
-  const { email, password, name, age, lookingFor } = await request.json();
+  const { email, password, name, age, lookingFor, initData } = await request.json();
+
+  const telegramId: number | null = initData
+    ? (validateTelegramInitData(initData)?.user?.id ?? null)
+    : null;
 
   if (!email || !password || !name) {
     return NextResponse.json({ error: 'Nombre, correo y contraseña requeridos' }, { status: 400 });
@@ -14,7 +19,6 @@ export async function POST(request: NextRequest) {
   }
 
   const sql = getDb();
-  await ensureUserSchema(sql);
 
   const retryIfUserSchemaError = async <T>(work: () => Promise<T>): Promise<T> => {
     try {
@@ -43,14 +47,19 @@ export async function POST(request: NextRequest) {
 
     const [user] = await retryIfUserSchemaError(async () => {
       return await sql`
-        INSERT INTO users (first_name, email, password_hash, age, looking_for)
+        INSERT INTO users (first_name, email, password_hash, age, looking_for, telegram_id)
         VALUES (
           ${name},
           ${email.toLowerCase().trim()},
           ${passwordHash},
           ${age ? Number(age) : null},
-          ${lookingFor || null}
+          ${lookingFor || null},
+          ${telegramId}
         )
+        ON CONFLICT (telegram_id) DO UPDATE SET
+          email = EXCLUDED.email,
+          password_hash = EXCLUDED.password_hash,
+          first_name = EXCLUDED.first_name
         RETURNING id, first_name, email, age, looking_for, subscription_status, options_unlocked
       `;
     });

@@ -11,7 +11,7 @@ import { OracleOrb } from "@/components/oracle-orb";
 import { useTelegram } from "@/components/telegram-provider";
 import { Spinner } from "@/components/ui/spinner";
 
-type Stage = "welcome" | "choose" | "register" | "login" | "success";
+type Stage = "welcome" | "choose" | "register" | "login" | "forgot" | "success";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -84,11 +84,15 @@ export default function WelcomePage() {
         {stage === "login" && (
           <LoginScreen
             onBack={() => setStage("welcome")}
+            onForgot={() => setStage("forgot")}
             onSuccess={(role) => {
               markWelcomeDone();
               router.push(role === 'companion' ? "/panel/dashboard" : "/");
             }}
           />
+        )}
+        {stage === "forgot" && (
+          <ForgotPasswordScreen onBack={() => setStage("login")} />
         )}
         {stage === "success" && (
           <SuccessScreen
@@ -367,6 +371,7 @@ function RegisterScreen({ role, formData, setFormData, onBack, onComplete }: {
             return;
           }
         } else {
+          const tg = (window as any).Telegram?.WebApp;
           const res = await fetch("/api/user-auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -376,6 +381,7 @@ function RegisterScreen({ role, formData, setFormData, onBack, onComplete }: {
               name: formData.name,
               age: formData.age ? Number(formData.age) : undefined,
               lookingFor: formData.looking_for,
+              initData: tg?.initData || null,
             }),
           });
           if (!res.ok) {
@@ -655,9 +661,10 @@ function FormField({ label, icon: Icon, children }: {
   );
 }
 
-function LoginScreen({ onBack, onSuccess }: {
+function LoginScreen({ onBack, onSuccess, onForgot }: {
   onBack: () => void;
   onSuccess: (role: 'companion' | 'user') => void;
+  onForgot: () => void;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -771,6 +778,15 @@ function LoginScreen({ onBack, onSuccess }: {
         {loading ? "Entrando..." : "Iniciar sesion"}
       </button>
 
+      <button
+        type="button"
+        onClick={onForgot}
+        className="mt-2 text-center text-xs bg-transparent border-none cursor-pointer"
+        style={{ color: "var(--muted-foreground)" }}
+      >
+        ¿Olvidaste tu contraseña?
+      </button>
+
       <div className="relative my-5">
         <div className="divider" />
         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3 text-[10px] text-muted-foreground tracking-[0.18em]">
@@ -786,6 +802,151 @@ function LoginScreen({ onBack, onSuccess }: {
       >
         {telegramLoading ? <Spinner className="h-4 w-4" /> : <Sparkles size={14} />}
         {telegramLoading ? 'Conectando...' : 'Continuar con Telegram'}
+      </button>
+    </div>
+  );
+}
+
+function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
+  const [step, setStep] = useState<"email" | "otp">("email");
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const handleRequestOtp = async () => {
+    if (!email.includes("@")) return;
+    setLoading(true);
+    setError("");
+    try {
+      const tg = (window as any).Telegram?.WebApp;
+      if (!tg?.initData) {
+        setError("Debes abrir esta pantalla desde Telegram");
+        return;
+      }
+      await fetch("/api/user-auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, initData: tg.initData }),
+      });
+      // Siempre avanzar para no revelar si el email existe
+      setStep("otp");
+    } catch {
+      setError("Error de conexion. Intentalo de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (otp.length !== 6 || newPass.length < 6) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/user-auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, newPassword: newPass }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Código incorrecto");
+        return;
+      }
+      setSuccess(true);
+    } catch {
+      setError("Error de conexion. Intentalo de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen grid place-items-center p-8 text-center">
+        <div>
+          <div
+            className="w-[80px] h-[80px] rounded-full mx-auto mb-5 grid place-items-center"
+            style={{ background: "oklch(0.30 0.16 155 / 0.30)", border: "1px solid oklch(0.65 0.16 155 / 0.40)" }}
+          >
+            <Check size={36} style={{ color: "oklch(0.78 0.16 155)" }} />
+          </div>
+          <h2 className="font-serif text-2xl gradient-text mb-2">¡Contraseña actualizada!</h2>
+          <p className="text-muted-foreground text-sm mb-6">Ya puedes iniciar sesion con tu nueva contraseña.</p>
+          <button className="btn-primary text-center" onClick={onBack}>Ir al login</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col px-5 pt-[76px] pb-7">
+      <button
+        onClick={step === "otp" ? () => setStep("email") : onBack}
+        className="flex items-center gap-1 text-xs text-muted-foreground mb-5 self-start bg-transparent border-none cursor-pointer p-1"
+      >
+        <ArrowLeft size={16} /> Atras
+      </button>
+
+      <div className="mb-7">
+        <h2 className="font-serif text-[26px] leading-tight mb-1">
+          {step === "email" ? "Recuperar contraseña" : "Ingresa el código"}
+        </h2>
+        <p className="text-[13px] text-muted-foreground leading-relaxed">
+          {step === "email"
+            ? "Te enviaremos un código de 6 dígitos al chat del bot de Telegram."
+            : `Revisa tu chat con AuraSecretx_bot en Telegram y escribe el código que te enviamos a ${email}.`}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3.5 flex-1">
+        {step === "email" ? (
+          <FormField label="Email de tu cuenta" icon={Globe}>
+            <input
+              className="input-aura"
+              autoFocus
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@email.com"
+            />
+          </FormField>
+        ) : (
+          <>
+            <FormField label="Código de 6 dígitos" icon={Shield}>
+              <input
+                className="input-aura"
+                autoFocus
+                type="number"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                placeholder="123456"
+              />
+            </FormField>
+            <FormField label="Nueva contraseña" icon={Lock}>
+              <input
+                className="input-aura"
+                type="password"
+                value={newPass}
+                onChange={(e) => setNewPass(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+              />
+            </FormField>
+          </>
+        )}
+      </div>
+
+      {error && <p className="text-red-400 text-xs text-center mb-3">{error}</p>}
+
+      <button
+        onClick={step === "email" ? handleRequestOtp : handleReset}
+        disabled={loading || (step === "email" ? !email.includes("@") : otp.length !== 6 || newPass.length < 6)}
+        className="mt-4 btn-primary text-center"
+        style={{ opacity: loading ? 0.5 : 1 }}
+      >
+        {loading ? "Procesando..." : step === "email" ? "Enviar código por Telegram" : "Guardar nueva contraseña"}
       </button>
     </div>
   );
