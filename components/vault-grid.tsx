@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Lock, Camera, Video } from "lucide-react";
+import { WatermarkedImage } from "@/components/watermarked-image";
 
 interface VaultItem {
   id: string;
@@ -18,9 +19,10 @@ interface VaultGridProps {
   items: VaultItem[];
   onPurchase: (itemId: string) => void;
   loading?: string | null;
+  watermarkText?: string;
 }
 
-export function VaultGrid({ items, onPurchase, loading }: VaultGridProps) {
+export function VaultGrid({ items, onPurchase, loading, watermarkText }: VaultGridProps) {
   if (items.length === 0) {
     return (
       <div className="text-center py-12">
@@ -42,11 +44,20 @@ export function VaultGrid({ items, onPurchase, loading }: VaultGridProps) {
           {item.type === 'photo' ? (
             <div className="aspect-square relative">
               {item.purchased && item.file_url ? (
+                watermarkText ? (
+                  <WatermarkedImage
+                    src={item.file_url}
+                    watermarkText={watermarkText}
+                    className="w-full h-full object-cover"
+                    alt={item.title || 'Foto'}
+                  />
+                ) : (
                 <img
                   src={item.file_url}
                   alt={item.title || 'Foto'}
                   className="w-full h-full object-cover"
                 />
+                )
               ) : (
                 <>
                   {item.thumbnail_url ? (
@@ -62,7 +73,7 @@ export function VaultGrid({ items, onPurchase, loading }: VaultGridProps) {
                   )}
                   <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
                     <Lock className="w-6 h-6 text-white mb-2" />
-                    <span className="text-white font-bold">${(item.price / 100).toFixed(0)} MXN</span>
+                    <span className="text-white font-bold">★{Math.round(item.price / 100)}</span>
                   </div>
                 </>
               )}

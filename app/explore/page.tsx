@@ -6,6 +6,7 @@ import { Lock, Check, Sparkles, ArrowRight, Camera } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { useTelegram } from "@/components/telegram-provider";
 import { payWithTelegram } from "@/lib/open-payment";
+import { WatermarkedImage } from "@/components/watermarked-image";
 
 interface ExploreItem {
   id: string;
@@ -127,7 +128,15 @@ export default function ExplorePage() {
                     {item.purchased ? (
                       <>
                         {item.thumbnail_url && (
-                          <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                          appUser ? (
+                            <WatermarkedImage
+                              src={item.thumbnail_url}
+                              watermarkText={appUser.username ? `@${appUser.username}` : `ID:${appUser.id}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                          )
                         )}
                         <div
                           className="absolute top-1.5 left-1.5 flex items-center gap-1 px-[7px] py-0.5 rounded-full text-[9px] font-bold text-white"
@@ -158,7 +167,7 @@ export default function ExplorePage() {
                         >
                           <Lock size={18} className="text-white" />
                           <span className="text-white font-bold text-xs">
-                            ${(item.price / 100).toFixed(0)}
+                            ★{Math.round(item.price / 100)}
                           </span>
                           {item.group_name && (
                             <span

@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
       LIMIT 50
     `;
 
-    return NextResponse.json({ items: items.map(i => ({ ...i, purchased: false })) });
+    return NextResponse.json({
+      items: items.map(i => ({ ...i, thumbnail_url: null, purchased: false })),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed';
     return NextResponse.json({ error: message }, { status: 500 });

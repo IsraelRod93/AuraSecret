@@ -796,7 +796,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 <button key={item.id} onClick={() => { setSelectedPhoto(item); setEditPrice(String(item.price / 100)); }} className="relative aspect-square rounded-lg overflow-hidden">
                   <img src={item.file_url || item.thumbnail_url || ''} alt={item.title || ''} className="w-full h-full object-cover" />
                   <div className="absolute bottom-1 left-1 bg-green-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                    ${item.price / 100}
+                    ★{item.price / 100}
                   </div>
                 </button>
               ))}
@@ -832,7 +832,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="font-medium text-foreground text-sm">{name}</p>
-                      <p className="text-xs text-muted-foreground">{pkgItems.length} fotos · ${pkgItems[0].price / 100} MXN</p>
+                      <p className="text-xs text-muted-foreground">{pkgItems.length} fotos · ★{pkgItems[0].price / 100} Stars</p>
                     </div>
                     <Edit3 size={16} className="text-muted-foreground" />
                   </div>
@@ -859,13 +859,13 @@ function PhotosTab({ companionId }: { companionId: string }) {
               {priceModal.files.length} foto{priceModal.files.length > 1 ? 's' : ''} seleccionada{priceModal.files.length > 1 ? 's' : ''}
             </p>
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-muted-foreground text-lg">$</span>
+              <span className="text-muted-foreground text-lg">★</span>
               <input
                 type="number" autoFocus
                 className="flex-1 bg-background border border-border rounded-lg p-3 text-foreground text-2xl font-bold text-center outline-none"
                 value={newPrice} onChange={e => setNewPrice(e.target.value)}
               />
-              <span className="text-muted-foreground text-sm">MXN</span>
+              <span className="text-muted-foreground text-sm">Stars</span>
             </div>
             <button 
               onClick={handleUploadWithPrice} 
@@ -885,9 +885,9 @@ function PhotosTab({ companionId }: { companionId: string }) {
             <img src={selectedPhoto.file_url || selectedPhoto.thumbnail_url || ''} alt="" className="w-full aspect-square object-cover rounded-xl mb-4" />
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-muted-foreground">Precio (MXN)</label>
+                <label className="text-xs text-muted-foreground">Precio (Stars)</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-muted-foreground">$</span>
+                  <span className="text-muted-foreground">★</span>
                   <input
                     type="number"
                     className="flex-1 bg-background border border-border rounded-lg p-2.5 text-foreground text-lg font-bold outline-none"
@@ -932,14 +932,14 @@ function PhotosTab({ companionId }: { companionId: string }) {
               <div>
                 <label className="text-xs text-muted-foreground">Precio del paquete completo</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-muted-foreground">$</span>
+                  <span className="text-muted-foreground">★</span>
                   <input
                     type="number"
                     className="flex-1 bg-background border border-border rounded-lg p-3 text-foreground font-bold outline-none"
                     value={pkgPrice} onChange={e => setPkgPrice(e.target.value)}
                     placeholder="199"
                   />
-                  <span className="text-muted-foreground text-sm">MXN</span>
+                  <span className="text-muted-foreground text-sm">Stars</span>
                 </div>
               </div>
 
@@ -1015,13 +1015,13 @@ function PhotosTab({ companionId }: { companionId: string }) {
               <div>
                 <label className="text-xs text-muted-foreground">Precio del paquete completo</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-muted-foreground">$</span>
+                  <span className="text-muted-foreground">★</span>
                   <input
                     type="number"
                     className="flex-1 bg-background border border-border rounded-lg p-3 text-foreground font-bold outline-none"
                     value={editPkgPrice} onChange={e => setEditPkgPrice(e.target.value)}
                   />
-                  <span className="text-muted-foreground text-sm">MXN</span>
+                  <span className="text-muted-foreground text-sm">Stars</span>
                 </div>
               </div>
 

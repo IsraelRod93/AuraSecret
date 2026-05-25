@@ -112,6 +112,7 @@ export default function VaultPage({ params }: { params: Promise<{ companionId: s
               items={items}
               onPurchase={handlePurchase}
               loading={purchaseLoading}
+              watermarkText={appUser ? (appUser.username ? `@${appUser.username}` : `ID:${appUser.id}`) : undefined}
             />
           )}
         </div>

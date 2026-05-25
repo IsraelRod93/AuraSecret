@@ -118,6 +118,7 @@ export async function GET(request: NextRequest) {
     const enriched = items.map(item => ({
       ...item,
       purchased: purchasedIds.includes(item.id),
+      thumbnail_url: purchasedIds.includes(item.id) ? item.thumbnail_url : null,
       file_url: purchasedIds.includes(item.id) ? item.file_url : null,
     }));
 

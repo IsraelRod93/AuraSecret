@@ -56,10 +56,8 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Item not found' }, { status: 404 });
         }
 
-        // item.price is in cents (e.g. 10000 = $100 MXN)
-        // We want to charge roughly 2.5 Stars per $1 MXN to cover fees and match value.
-        // Formula: (price_in_cents / 100) * 2.5
-        const starPrice = Math.max(50, Math.round((item.price / 100) * 2.5));
+        // item.price is stored as Stars * 100 (e.g. 5000 = 50 Stars)
+        const starPrice = Math.max(1, Math.round(item.price / 100));
 
         invoiceUrl = await createInvoiceLink({
           title: item.title || 'Contenido exclusivo',
