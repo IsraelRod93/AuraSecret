@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getDb } from '@/lib/db';
 import { getRequestUserId } from '@/lib/get-user-id';
+import { isNewSession } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
   const userId = getRequestUserId(request);
@@ -16,10 +17,13 @@ export async function GET(request: NextRequest) {
         FROM users WHERE id = ${userId}::uuid LIMIT 1
       `;
 
-      const views = (user?.gallery_views || 0) + 1;
-      await sql`
-        UPDATE users SET gallery_views = ${views} WHERE id = ${userId}::uuid
-      `;
+      // Only count a new "view" once per 10-minute session window.
+      // Prevents page refreshes from eating the free quota.
+      const newSession = await isNewSession(`gallery:${userId}`);
+      const views = newSession ? (user?.gallery_views || 0) + 1 : (user?.gallery_views || 0);
+      if (newSession) {
+        await sql`UPDATE users SET gallery_views = ${views} WHERE id = ${userId}::uuid`;
+      }
 
       const now = new Date();
       const isUnrestricted =

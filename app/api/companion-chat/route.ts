@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
 
-  if (!checkRateLimit(`chat:${userId}`)) {
+  if (!(await checkRateLimit(`chat:${userId}`))) {
     return NextResponse.json({ error: 'Demasiadas solicitudes, espera un momento' }, { status: 429 });
   }
 

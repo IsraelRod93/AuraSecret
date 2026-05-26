@@ -45,6 +45,16 @@ export async function POST(request: NextRequest) {
       switch (payload.type) {
         case 'gallery_unlock': {
           if (payload.userId) {
+            const chargeId = payment.telegram_payment_charge_id;
+            const [dup] = await sql`
+              SELECT id FROM purchases WHERE stripe_payment_id = ${chargeId} LIMIT 1
+            `;
+            if (dup) break;
+            await sql`
+              INSERT INTO purchases (user_id, amount, stripe_payment_id, status)
+              VALUES (${payload.userId}::uuid, ${payment.total_amount}, ${chargeId}, 'completed')
+            `;
+
             const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
             await sql`
               UPDATE users SET gallery_expires_at = ${expiresAt}, gallery_views = 0 WHERE id = ${payload.userId}::uuid
@@ -67,6 +77,16 @@ export async function POST(request: NextRequest) {
 
         case 'subscription': {
           if (payload.userId) {
+            const chargeId = payment.telegram_payment_charge_id;
+            const [dup] = await sql`
+              SELECT id FROM purchases WHERE stripe_payment_id = ${chargeId} LIMIT 1
+            `;
+            if (dup) break;
+            await sql`
+              INSERT INTO purchases (user_id, amount, stripe_payment_id, status)
+              VALUES (${payload.userId}::uuid, ${payment.total_amount}, ${chargeId}, 'completed')
+            `;
+
             const days = payload.plan === 'monthly' ? 30 : 7;
             const currentExpiry = await sql`
               SELECT subscription_expires_at FROM users WHERE id = ${payload.userId}::uuid LIMIT 1
