@@ -638,25 +638,31 @@ function PhotosTab({ companionId }: { companionId: string }) {
 
   const handleCreatePackage = async () => {
     if (!pkgName || !pkgPrice) { alert('Pon nombre y precio al paquete'); return; }
-    if (pkgSelected.length === 0 && pkgNewFiles.length === 0) { alert('Agrega fotos al paquete'); return; }
+    if (pkgSelected.length === 0 && pkgNewFiles.length === 0) { alert('Agrega al menos un archivo al paquete'); return; }
 
     setUploading(true);
     try {
       for (const id of pkgSelected) {
-        await fetch('/api/vault', {
+        const res = await fetch('/api/vault', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ itemId: id, groupName: pkgName, price: Number(pkgPrice) * 100 }),
         });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.error || `Error al mover archivo (${res.status})`);
+        }
       }
 
       for (const file of pkgNewFiles) {
         const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
-        const uploadData = await uploadRes.json();
-        if (!uploadData.url) continue;
+        const uploadData = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok || !uploadData.url) {
+          throw new Error(uploadData.error || `Error al subir "${file.name}" (${uploadRes.status})`);
+        }
 
         const itemType = file.type.startsWith('video/') ? 'video' : 'photo';
-        await fetch('/api/vault', {
+        const vaultRes = await fetch('/api/vault', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -667,12 +673,16 @@ function PhotosTab({ companionId }: { companionId: string }) {
             groupName: pkgName,
           }),
         });
+        if (!vaultRes.ok) {
+          const d = await vaultRes.json().catch(() => ({}));
+          throw new Error(d.error || `Error al guardar archivo (${vaultRes.status})`);
+        }
       }
 
       setCreatingPackage(false);
       setPkgName(''); setPkgPrice(''); setPkgSelected([]); setPkgNewFiles([]);
       await loadItems();
-    } catch { alert('Error al crear paquete'); }
+    } catch (e) { alert(e instanceof Error ? e.message : 'Error al crear paquete'); }
     finally { setUploading(false); }
   };
 
