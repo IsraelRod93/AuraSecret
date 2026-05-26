@@ -15,7 +15,8 @@ function checkSubscribed(user: any): boolean {
 
 export async function GET(request: NextRequest) {
   const companionId = request.nextUrl.searchParams.get('companionId');
-  const userId = getRequestUserId(request);
+  // Cookie session first; fall back to query param for Telegram Mini App users
+  const userId = getRequestUserId(request) ?? request.nextUrl.searchParams.get('userId');
 
   if (!companionId || !userId) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
@@ -64,7 +65,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = getRequestUserId(request);
+  const body = await request.json();
+  // Cookie session first; fall back to body.userId for Telegram Mini App users
+  const userId = getRequestUserId(request) ?? body.userId ?? null;
   if (!userId) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Demasiadas solicitudes, espera un momento' }, { status: 429 });
   }
 
-  const { companionId, message } = await request.json();
+  const { companionId, message } = body;
 
   if (!companionId || !message) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

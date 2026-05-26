@@ -29,30 +29,33 @@ export async function ensureFullSchema(sql: Sql) {
 
   await sql`
     CREATE TABLE IF NOT EXISTS users (
-      id                     UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-      telegram_id            BIGINT      UNIQUE,
-      first_name             TEXT,
-      email                  TEXT        UNIQUE,
-      password_hash          TEXT,
-      age                    INTEGER,
-      looking_for            TEXT,
-      referred_by            UUID,
-      subscription_status    TEXT        DEFAULT 'free',
+      id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      telegram_id             BIGINT      UNIQUE,
+      username                TEXT,
+      first_name              TEXT,
+      email                   TEXT        UNIQUE,
+      password_hash           TEXT,
+      age                     INTEGER,
+      looking_for             TEXT,
+      referred_by             UUID,
+      referred_by_companion   UUID,
+      subscription_status     TEXT        DEFAULT 'free',
       subscription_expires_at TIMESTAMPTZ,
-      options_unlocked       BOOLEAN     DEFAULT false,
-      gallery_views          INTEGER     DEFAULT 0,
-      gallery_expires_at     TIMESTAMPTZ,
-      created_at             TIMESTAMPTZ DEFAULT NOW()
+      options_unlocked        BOOLEAN     DEFAULT false,
+      gallery_views           INTEGER     DEFAULT 0,
+      gallery_expires_at      TIMESTAMPTZ,
+      created_at              TIMESTAMPTZ DEFAULT NOW()
     )
   `.catch(() => {});
 
   await sql`
     CREATE TABLE IF NOT EXISTS conversations (
-      id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      companion_id UUID        NOT NULL REFERENCES companions(id) ON DELETE CASCADE,
-      created_at   TIMESTAMPTZ DEFAULT NOW(),
-      updated_at   TIMESTAMPTZ DEFAULT NOW(),
+      id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id       UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      companion_id  UUID        NOT NULL REFERENCES companions(id) ON DELETE CASCADE,
+      message_count INTEGER     DEFAULT 0,
+      created_at    TIMESTAMPTZ DEFAULT NOW(),
+      updated_at    TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE (user_id, companion_id)
     )
   `.catch(() => {});
@@ -152,8 +155,12 @@ export async function ensureFullSchema(sql: Sql) {
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS clabe TEXT`.catch(() => {});
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS email TEXT`.catch(() => {});
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS password_hash TEXT`.catch(() => {});
+  await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS personality_prompt TEXT`.catch(() => {});
   await sql`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS earnings_credited BOOLEAN DEFAULT false`.catch(() => {});
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`.catch(() => {});
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_companion UUID`.catch(() => {});
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS gallery_views INTEGER DEFAULT 0`.catch(() => {});
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS gallery_expires_at TIMESTAMPTZ`.catch(() => {});
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ`.catch(() => {});
+  await sql`ALTER TABLE conversations ADD COLUMN IF NOT EXISTS message_count INTEGER DEFAULT 0`.catch(() => {});
 }

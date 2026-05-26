@@ -101,11 +101,15 @@ export default function CompanionChatPage({
         body: JSON.stringify({
           companionId,
           message: userMsg.content,
-          userId: appUser.id,
+          userId: String(appUser.id),
         }),
       });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || `Error ${res.status}`);
+      }
 
       if (data.action === "subscription_required") {
         setShowSubscription(true);
