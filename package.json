@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "migrate": "npx tsx scripts/migrate.ts"
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.1053.0",
