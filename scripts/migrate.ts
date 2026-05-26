@@ -1,9 +1,11 @@
 /**
+ * Inicializa / actualiza el schema completo de la DB.
  * Ejecutar una sola vez después de cada deploy que modifique el schema:
+ *
  *   DATABASE_URL=... npm run migrate
  */
 import postgres from 'postgres';
-import { ensurePayoutSchema } from '../lib/payout';
+import { ensureFullSchema } from '../lib/db-migrate';
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -12,7 +14,7 @@ async function main() {
   const sql = postgres(url, { ssl: 'require' });
 
   console.log('Running migrations...');
-  await ensurePayoutSchema(sql);
+  await ensureFullSchema(sql);
   console.log('Done.');
 
   await sql.end();

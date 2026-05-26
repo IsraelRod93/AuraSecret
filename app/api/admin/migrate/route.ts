@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { ensurePayoutSchema } from '@/lib/payout';
+import { ensureFullSchema } from '@/lib/db-migrate';
 
 export async function POST(request: NextRequest) {
   const adminPassword = request.headers.get('x-admin-password');
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
 
   const sql = getDb();
   try {
-    await ensurePayoutSchema(sql);
+    await ensureFullSchema(sql);
     return NextResponse.json({ ok: true, message: 'Migraciones aplicadas' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Migration failed';
