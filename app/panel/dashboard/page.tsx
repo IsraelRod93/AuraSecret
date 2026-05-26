@@ -9,6 +9,7 @@ import {
   MapPin, Heart, Calendar, Edit3,
   Plus, Trash2, Package, Check, X, Image,
   MessageCircle, Send, ArrowLeft, Link2, Copy, Share2,
+  Wallet, CreditCard, ArrowDownToLine, Lightbulb,
 } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 
@@ -37,6 +38,17 @@ interface Sale {
   first_name: string | null; username: string | null;
 }
 
+interface BalanceData {
+  earningsStars: number;
+  pendingStars: number;
+  availableStars: number;
+  estimatedMxn: number;
+  minWithdrawalStars: number;
+  starsToMxn: number;
+  mpEmail: string | null;
+  clabe: string | null;
+}
+
 const PERSONALITY_OPTIONS = [
   { value: 'romantica', label: 'Romántica' },
   { value: 'aventurera', label: 'Aventurera' },
@@ -52,7 +64,7 @@ const fmt = (n: number) => new Intl.NumberFormat('es-MX').format(n);
 
 export default function PanelDashboard() {
   const router = useRouter();
-  const [tab, setTab] = useState<'dashboard' | 'profile' | 'photos' | 'chats'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'profile' | 'photos' | 'chats' | 'pagos'>('dashboard');
   const [companion, setCompanion] = useState<Companion | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -81,6 +93,7 @@ export default function PanelDashboard() {
     { key: 'dashboard' as const, label: 'Inicio', icon: BarChart3 },
     { key: 'photos' as const, label: 'Fotos', icon: Camera },
     { key: 'chats' as const, label: 'Chats', icon: MessageCircle },
+    { key: 'pagos' as const, label: 'Pagos', icon: Wallet },
     { key: 'profile' as const, label: 'Perfil', icon: User },
   ];
 
@@ -129,6 +142,7 @@ export default function PanelDashboard() {
           )}
           {tab === 'photos' && <PhotosTab key="photos" companionId={companion.id} />}
           {tab === 'chats' && <ChatsTab key="chats" companionId={companion.id} />}
+          {tab === 'pagos' && <PayoutTab key="pagos" />}
         </AnimatePresence>
       </div>
 
@@ -1374,6 +1388,253 @@ function ShareLinkCard({ companionId }: { companionId: string }) {
         </button>
       </div>
     </div>
+  );
+}
+
+// ── Payout Tab ──
+
+function PayoutTab() {
+  const [balance, setBalance] = useState<BalanceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [mpEmail, setMpEmail] = useState('');
+  const [clabe, setClabe] = useState('');
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [savedPayment, setSavedPayment] = useState(false);
+  const [withdrawStars, setWithdrawStars] = useState('');
+  const [requesting, setRequesting] = useState(false);
+  const [requestMsg, setRequestMsg] = useState('');
+
+  const loadBalance = async () => {
+    const res = await fetch('/api/panel-auth/balance');
+    const d = await res.json();
+    setBalance(d);
+    setMpEmail(d.mpEmail || '');
+    setClabe(d.clabe || '');
+  };
+
+  useEffect(() => {
+    loadBalance().finally(() => setLoading(false));
+  }, []);
+
+  const handleSavePayment = async () => {
+    setSavingPayment(true);
+    try {
+      await fetch('/api/panel-auth/payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mpEmail: mpEmail || null, clabe: clabe || null }),
+      });
+      setSavedPayment(true);
+      setTimeout(() => setSavedPayment(false), 2000);
+    } finally { setSavingPayment(false); }
+  };
+
+  const handleWithdraw = async () => {
+    const stars = Number(withdrawStars);
+    if (!stars) return;
+    setRequesting(true);
+    setRequestMsg('');
+    try {
+      const res = await fetch('/api/panel-auth/payout', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountStars: stars }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRequestMsg(`Retiro solicitado: ★${stars} (~$${data.amountMxn} MXN). El admin lo procesará en 1-3 días.`);
+        setWithdrawStars('');
+        await loadBalance();
+      } else {
+        setRequestMsg(data.error || 'Error al solicitar retiro');
+      }
+    } finally { setRequesting(false); }
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  const hasPaymentMethod = !!(mpEmail || clabe);
+  const canWithdraw = balance && balance.availableStars >= (balance.minWithdrawalStars);
+  const withdrawAmount = Number(withdrawStars);
+  const withdrawValid = withdrawAmount >= (balance?.minWithdrawalStars || 500) && withdrawAmount <= (balance?.availableStars || 0);
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+
+      {/* Balance hero */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, oklch(0.30 0.16 155 / 0.20), oklch(0.18 0.08 295 / 0.40))",
+          border: "1px solid oklch(0.65 0.16 155 / 0.30)",
+          borderRadius: 22, padding: 22,
+        }}
+      >
+        <p className="text-xs text-muted-foreground mb-1">Tus ganancias totales</p>
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-serif text-[40px] font-medium leading-none" style={{ color: "var(--green)" }}>
+            ★{fmt(balance?.earningsStars || 0)}
+          </span>
+          <span className="text-[13px] text-muted-foreground">Stars</span>
+        </div>
+        <div className="flex gap-4 mt-3">
+          <div>
+            <p className="text-[10px] text-muted-foreground">En proceso</p>
+            <p className="text-sm font-medium text-yellow-400">★{fmt(balance?.pendingStars || 0)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Disponibles</p>
+            <p className="text-sm font-medium" style={{ color: "var(--green)" }}>★{fmt(balance?.availableStars || 0)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Estimado MXN</p>
+            <p className="text-sm font-medium text-foreground">${balance?.estimatedMxn?.toFixed(0) || 0}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Método de pago */}
+      <div className="solid-card rounded-[18px] p-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <CreditCard size={16} style={{ color: "var(--primary)" }} />
+          <h4 className="text-sm font-semibold text-foreground">Método de cobro</h4>
+          {hasPaymentMethod && <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--green-soft)", color: "var(--green)" }}>Activo</span>}
+        </div>
+
+        <div className="space-y-2">
+          <div>
+            <label className="text-[11px] text-muted-foreground">Correo Mercado Pago (pago automático)</label>
+            <input
+              type="email"
+              className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none"
+              placeholder="tu@email.com"
+              value={mpEmail}
+              onChange={e => setMpEmail(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <div className="flex-1 h-px bg-border" />
+            <span>o</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <div>
+            <label className="text-[11px] text-muted-foreground">CLABE interbancaria (transferencia manual)</label>
+            <input
+              type="text"
+              className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none"
+              placeholder="18 dígitos"
+              maxLength={18}
+              value={clabe}
+              onChange={e => setClabe(e.target.value.replace(/\D/g, ''))}
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleSavePayment}
+          disabled={savingPayment || (!mpEmail && !clabe)}
+          className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-bold disabled:opacity-40"
+        >
+          {savedPayment ? '✓ Guardado' : savingPayment ? 'Guardando...' : 'GUARDAR MÉTODO DE COBRO'}
+        </button>
+      </div>
+
+      {/* Solicitar retiro */}
+      <div className="solid-card rounded-[18px] p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <ArrowDownToLine size={16} style={{ color: "var(--primary)" }} />
+          <h4 className="text-sm font-semibold text-foreground">Solicitar retiro</h4>
+        </div>
+
+        {!hasPaymentMethod ? (
+          <p className="text-xs text-muted-foreground py-2">Primero guarda tu Mercado Pago o CLABE arriba para poder retirar.</p>
+        ) : !canWithdraw ? (
+          <p className="text-xs text-muted-foreground py-2">
+            Necesitas al menos ★{balance?.minWithdrawalStars} disponibles (~${((balance?.minWithdrawalStars || 500) * (balance?.starsToMxn || 0.15)).toFixed(0)} MXN). Tienes ★{balance?.availableStars || 0}.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <label className="text-[11px] text-muted-foreground">¿Cuántas Stars retirar?</label>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">★</span>
+              <input
+                type="number"
+                min={balance?.minWithdrawalStars || 500}
+                max={balance?.availableStars || 0}
+                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-foreground text-lg font-bold outline-none"
+                value={withdrawStars}
+                onChange={e => setWithdrawStars(e.target.value)}
+                placeholder={String(balance?.minWithdrawalStars || 500)}
+              />
+            </div>
+            {withdrawAmount > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                Recibirás aproximadamente <strong className="text-green-400">${(withdrawAmount * (balance?.starsToMxn || 0.15)).toFixed(2)} MXN</strong>
+              </p>
+            )}
+            <button
+              onClick={handleWithdraw}
+              disabled={requesting || !withdrawValid}
+              className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-bold disabled:opacity-40"
+            >
+              {requesting ? 'Solicitando...' : 'SOLICITAR RETIRO'}
+            </button>
+          </div>
+        )}
+
+        {requestMsg && (
+          <p className={`text-xs mt-1 ${requestMsg.startsWith('Retiro') ? 'text-green-400' : 'text-destructive'}`}>
+            {requestMsg}
+          </p>
+        )}
+      </div>
+
+      {/* Consejos de rentabilidad */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Lightbulb size={14} style={{ color: "oklch(0.85 0.18 85)" }} />
+          <h4 className="text-xs font-semibold" style={{ color: "oklch(0.85 0.18 85)" }}>Consejos para ganar más</h4>
+        </div>
+
+        {[
+          {
+            titulo: 'Sube contenido diariamente',
+            texto: 'Las creadores que suben 1 foto al día tienen 3x más ventas. La constancia genera anticipación y fidelidad.',
+          },
+          {
+            titulo: 'Usa paquetes temáticos',
+            texto: 'Un paquete de 5-10 fotos por ★150-200 convierte mejor que fotos sueltas. El cliente siente que "gana" más.',
+          },
+          {
+            titulo: 'Activa la suscripción mensual',
+            texto: 'Ingresos recurrentes son la base de un negocio estable. Con 30 suscriptores a ★150 = ★4,500 fijos al mes.',
+          },
+          {
+            titulo: 'Comparte tu link en redes',
+            texto: 'Instagram Stories, TikTok o grupos de Telegram multiplican tu alcance sin costo. Cada fan nuevo es ingreso potencial.',
+          },
+          {
+            titulo: 'Responde mensajes rápido',
+            texto: 'Los usuarios que reciben respuesta en <1 hora tienen 2x más probabilidad de pagar. La conexión personal vende.',
+          },
+        ].map((tip, i) => (
+          <div
+            key={i}
+            className="flex gap-3 p-3 rounded-[14px]"
+            style={{
+              background: "oklch(0.18 0.06 85 / 0.15)",
+              border: "1px solid oklch(0.85 0.18 85 / 0.15)",
+            }}
+          >
+            <span className="text-[11px] font-bold mt-0.5 flex-shrink-0" style={{ color: "oklch(0.85 0.18 85)" }}>{i + 1}</span>
+            <div>
+              <p className="text-xs font-semibold text-foreground">{tip.titulo}</p>
+              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{tip.texto}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
   );
 }
 

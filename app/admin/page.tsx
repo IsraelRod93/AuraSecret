@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Upload, Lock, CheckCircle, AlertCircle, BarChart3, Users, MessageCircle, TrendingUp, Star } from 'lucide-react';
+import { Upload, Lock, CheckCircle, AlertCircle, BarChart3, Users, MessageCircle, TrendingUp, Star, Wallet, Download, RefreshCw } from 'lucide-react';
 
 interface FunnelData {
   bot_start: number;
@@ -9,6 +9,23 @@ interface FunnelData {
   limit_reached: number;
   payment_completed: number;
   referral_join: number;
+}
+
+interface PayoutRow {
+  id: string;
+  companion_name: string;
+  amount_stars: number;
+  amount_mxn: string;
+  mp_email: string | null;
+  clabe: string | null;
+  status: string;
+  created_at: string;
+}
+
+interface PayoutTotals {
+  count: number;
+  total_stars: number;
+  total_mxn: string;
 }
 
 export default function AdminPage() {
@@ -21,6 +38,13 @@ export default function AdminPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [analyticsError, setAnalyticsError] = useState('');
+
+  const [payoutsLoading, setPayoutsLoading] = useState(false);
+  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+  const [payoutTotals, setPayoutTotals] = useState<PayoutTotals | null>(null);
+  const [payoutsError, setPayoutsError] = useState('');
+  const [processingPayouts, setProcessingPayouts] = useState(false);
+  const [processResult, setProcessResult] = useState('');
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +89,53 @@ export default function AdminPage() {
 
   const pct = (num: number, den: number) =>
     den === 0 ? '0%' : `${Math.round((num / den) * 100)}%`;
+
+  const loadPayouts = async () => {
+    if (!password) { setPayoutsError('Ingresa la contraseña primero'); return; }
+    setPayoutsLoading(true);
+    setPayoutsError('');
+    try {
+      const res = await fetch('/api/admin/payouts', { headers: { 'x-admin-password': password } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error');
+      setPayouts(data.pending || []);
+      setPayoutTotals(data.totals || null);
+    } catch (err) {
+      setPayoutsError(err instanceof Error ? err.message : 'Error al cargar retiros');
+    } finally { setPayoutsLoading(false); }
+  };
+
+  const processPayouts = async () => {
+    if (!confirm(`Procesar ${payouts.length} retiro(s) via Mercado Pago?`)) return;
+    setProcessingPayouts(true);
+    setProcessResult('');
+    try {
+      const res = await fetch('/api/admin/payouts', {
+        method: 'POST',
+        headers: { 'x-admin-password': password },
+      });
+      const data = await res.json();
+      setProcessResult(`✓ ${data.success} exitosos · ${data.failed} fallidos · ${data.manual} manuales`);
+      await loadPayouts();
+    } catch {
+      setProcessResult('Error al procesar');
+    } finally { setProcessingPayouts(false); }
+  };
+
+  const downloadSpei = async () => {
+    const res = await fetch('/api/admin/payouts', {
+      method: 'DELETE',
+      headers: { 'x-admin-password': password },
+    });
+    if (!res.ok) { alert('Sin retiros con CLABE pendientes'); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `retiros-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="bg-background min-h-screen font-serif p-5">
@@ -204,6 +275,100 @@ export default function AdminPage() {
                   </span>
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Payouts */}
+        <div className="bg-card p-6 rounded-2xl border-2 border-border shadow-[0_0_30px_rgba(49,27,146,0.3)]">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <Wallet className="text-primary" size={20} />
+              <h3 className="text-foreground font-bold">Retiros de Creadoras</h3>
+            </div>
+            <button
+              onClick={loadPayouts}
+              disabled={payoutsLoading}
+              className="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-lg border border-primary/30 hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              <RefreshCw size={12} className={payoutsLoading ? 'animate-spin' : ''} />
+              {payoutsLoading ? 'Cargando...' : 'Actualizar'}
+            </button>
+          </div>
+
+          {payoutsError && <p className="text-destructive text-sm text-center py-4">{payoutsError}</p>}
+
+          {!payouts.length && !payoutsError && (
+            <p className="text-muted-foreground text-sm text-center py-6">
+              Ingresa la contraseña y toca Actualizar para ver los retiros pendientes
+            </p>
+          )}
+
+          {payoutTotals && payoutTotals.count > 0 && (
+            <>
+              <div className="flex gap-3 mb-4">
+                <div className="flex-1 bg-background rounded-xl p-3 text-center border border-border">
+                  <p className="text-xl font-bold text-foreground">{payoutTotals.count}</p>
+                  <p className="text-[10px] text-muted-foreground">pendientes</p>
+                </div>
+                <div className="flex-1 bg-background rounded-xl p-3 text-center border border-border">
+                  <p className="text-xl font-bold text-yellow-400">★{payoutTotals.total_stars.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground">Stars totales</p>
+                </div>
+                <div className="flex-1 bg-background rounded-xl p-3 text-center border border-border">
+                  <p className="text-xl font-bold text-green-400">${Number(payoutTotals.total_mxn).toFixed(0)}</p>
+                  <p className="text-[10px] text-muted-foreground">MXN totales</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                {payouts.map(p => (
+                  <div key={p.id} className="bg-background border border-border rounded-xl p-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{p.companion_name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {p.mp_email ? `MP: ${p.mp_email}` : p.clabe ? `CLABE: ${p.clabe.slice(0, 6)}…` : 'Sin método'}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-bold text-green-400">${Number(p.amount_mxn).toFixed(2)}</p>
+                      <p className="text-[10px] text-muted-foreground">★{p.amount_stars}</p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 ${p.mp_email ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                      {p.mp_email ? 'MP' : 'SPEI'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={processPayouts}
+                  disabled={processingPayouts}
+                  className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {processingPayouts ? <RefreshCw size={14} className="animate-spin" /> : <Wallet size={14} />}
+                  {processingPayouts ? 'Procesando...' : 'Procesar via MP'}
+                </button>
+                <button
+                  onClick={downloadSpei}
+                  className="flex-1 bg-card border border-border text-foreground py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:border-primary/50 transition-colors"
+                >
+                  <Download size={14} />
+                  CSV SPEI
+                </button>
+              </div>
+
+              {processResult && (
+                <p className="text-xs text-center mt-3 text-muted-foreground">{processResult}</p>
+              )}
+            </>
+          )}
+
+          {payoutTotals && payoutTotals.count === 0 && (
+            <div className="text-center py-6">
+              <CheckCircle className="text-green-500 mx-auto mb-2" size={24} />
+              <p className="text-muted-foreground text-sm">Sin retiros pendientes</p>
             </div>
           )}
         </div>

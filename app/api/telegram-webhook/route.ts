@@ -3,6 +3,7 @@ import { answerPreCheckoutQuery } from '@/lib/telegram-pay';
 import { sendMessage, sendPhoto, WEBAPP_URL, BOT_USERNAME } from '@/lib/telegram-bot';
 import { getDb } from '@/lib/db';
 import { trackEvent } from '@/lib/track-event';
+import { creditCreatorEarnings } from '@/lib/payout';
 
 function parsePayload(raw: string): { type: string; userId?: string; vaultItemId?: string; companionId?: string; plan?: string } {
   // New compact format: "g:userId", "s:userId:w", "v:userId:vaultItemId:companionId"
@@ -132,6 +133,10 @@ export async function POST(request: NextRequest) {
                   'completed'
                 )
               `;
+            }
+
+            if (payload.companionId) {
+              await creditCreatorEarnings(sql, payload.companionId, payment.total_amount);
             }
 
             await sendMessage(chatId, "<b>Tesoro desbloqueado...</b> 🔓\n\nLo que acabas de adquirir es solo para tus ojos. Disfrútalo en tu bóveda privada.");
