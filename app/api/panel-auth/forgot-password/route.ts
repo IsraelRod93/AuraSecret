@@ -45,10 +45,19 @@ export async function POST(request: NextRequest) {
     WHERE id = ${companion.id}
   `;
 
-  await sendMessage(
+  const tgRes = await sendMessage(
     companion.telegram_id,
-    `🔐 Código de recuperación de AuraSecret:\n\n*${otp}*\n\nVálido por ${OTP_TTL_MINUTES} minutos. No lo compartas con nadie.`
+    `🔐 Tu código de recuperación de AuraSecret:\n\n<b>${otp}</b>\n\nVálido por ${OTP_TTL_MINUTES} minutos. No lo compartas con nadie.`
   );
+
+  if (!tgRes.ok) {
+    // Limpiar el OTP para no dejar basura
+    await sql`UPDATE companions SET reset_otp = NULL, reset_otp_expires_at = NULL WHERE id = ${companion.id}`;
+    return NextResponse.json(
+      { error: `No se pudo enviar el mensaje por Telegram (${tgRes.description || tgRes.error_code || 'error desconocido'}). Asegúrate de haber abierto el bot primero.` },
+      { status: 502 }
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

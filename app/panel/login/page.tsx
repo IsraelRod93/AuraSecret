@@ -62,10 +62,12 @@ export default function PanelLogin() {
     setLoading(true);
 
     try {
+      const tgInitData = (window as any).Telegram?.WebApp?.initData || null;
+
       const res = await fetch('/api/panel-auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, initData: tgInitData }),
       });
       const data = await res.json();
 

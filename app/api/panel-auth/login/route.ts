@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/db';
 import { signToken, setSessionCookie } from '@/lib/auth';
+import { validateTelegramInitData } from '@/lib/telegram';
 
 export async function POST(request: NextRequest) {
-  const { email, password } = await request.json();
+  const { email, password, initData } = await request.json();
 
   if (!email || !password) {
     return NextResponse.json({ error: 'Correo y contraseña requeridos' }, { status: 400 });
@@ -30,6 +31,14 @@ export async function POST(request: NextRequest) {
 
     if (!valid) {
       return NextResponse.json({ error: 'Correo o contraseña incorrectos' }, { status: 401 });
+    }
+
+    // Si viene initData de Telegram y la cuenta no tiene telegram_id, lo guardamos
+    if (initData && !companion.telegram_id) {
+      const telegramId = validateTelegramInitData(initData)?.user?.id ?? null;
+      if (telegramId) {
+        await sql`UPDATE companions SET telegram_id = ${telegramId} WHERE id = ${companion.id}`.catch(() => {});
+      }
     }
 
     const token = signToken({ companionId: companion.id });
