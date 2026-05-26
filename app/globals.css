@@ -477,6 +477,27 @@ html[data-tg="1"] .page-content-inset {
   padding-right: 16px;
 }
 
+/* Improve mobile keyboard behavior: reserve viewport height and make
+   page content scrollable without moving the overall viewport when inputs
+   receive focus. Uses dynamic viewport units (dvh) where available. */
+html, body, #__next, .phone-outer, .phone-screen {
+  height: 100dvh;
+}
+
+.page-content-inset {
+  height: calc(100dvh - var(--header-offset-top));
+  overflow: hidden;
+}
+
+.page-content-inset.overflow-y-auto,
+.page-content-inset.overflow-auto,
+.page-content-inset > .overflow-y-auto,
+.page-content-inset > .overflow-auto {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Safe area utilities */
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);

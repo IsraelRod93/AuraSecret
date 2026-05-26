@@ -25,6 +25,7 @@ export default function ExplorePage() {
   const router = useRouter();
   const { appUser } = useTelegram();
   const [items, setItems] = useState<ExploreItem[]>([]);
+  const [creators, setCreators] = useState<{ id: string; name: string; photo: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
 
@@ -39,6 +40,7 @@ export default function ExplorePage() {
       const res = await fetch(`/api/explore?${params}`);
       const data = await res.json();
       setItems(data.items || []);
+      setCreators(data.creators || []);
     } catch {
       // ignore
     } finally {
@@ -95,7 +97,21 @@ export default function ExplorePage() {
             <p className="text-muted-foreground text-xs">Aqui veras novedades de tus favoritas</p>
           </div>
         ) : (
-          Object.entries(grouped).map(([companionId, group]) => (
+          <>
+            {creators.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-serif text-lg mb-3 text-foreground">Creadores nuevos</h3>
+                <div className="grid grid-cols-4 gap-3 mb-4">
+                  {creators.map((c) => (
+                    <button key={c.id} onClick={() => router.push(`/vault/${c.id}`)} className="flex flex-col items-center">
+                      <img src={c.photo || '/icon.svg'} alt={c.name} className="w-16 h-16 rounded-full object-cover" />
+                      <span className="text-xs mt-2 text-center text-foreground">{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {Object.entries(grouped).map(([companionId, group]) => (
             <div key={companionId} className="mb-7">
               <button
                 onClick={() => router.push(`/vault/${companionId}`)}
@@ -192,6 +208,8 @@ export default function ExplorePage() {
               </div>
             </div>
           ))
+          }
+        </>
         )}
       </div>
     </div>
