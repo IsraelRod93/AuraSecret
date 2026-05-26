@@ -447,16 +447,13 @@ export default function AdminPage() {
                 <div key={item.id} className="bg-background border border-border rounded-xl overflow-hidden">
                   <div className="relative aspect-square bg-slate-900">
                     {item.type === 'video' ? (
-                      <>
-                        <video
-                          src={item.file_url || ''}
-                          preload="none"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
-                          <Play className="w-8 h-8 text-white fill-white opacity-80" />
-                        </div>
-                      </>
+                      <video
+                        src={item.file_url || ''}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <img
                         src={item.file_url || ''}
