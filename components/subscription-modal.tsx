@@ -94,8 +94,8 @@ export function SubscriptionModal({ open, onClose, onSubscribe, loading, compani
                 <p className="text-xs text-muted-foreground">30 días de acceso total</p>
               </div>
               <div className="text-right">
-                <p className="text-xl font-bold text-primary">200 ★</p>
-                <p className="text-[11px] text-muted-foreground">~$30 MXN</p>
+                <p className="text-xl font-bold text-primary">250 ★</p>
+                <p className="text-[11px] text-muted-foreground">~$87 MXN</p>
               </div>
             </div>
 
@@ -104,7 +104,7 @@ export function SubscriptionModal({ open, onClose, onSubscribe, loading, compani
               disabled={loading}
               className="w-full bg-gradient-to-r from-primary to-pink-500 text-white py-4 rounded-xl font-bold text-lg transition-all hover:opacity-90 disabled:opacity-50"
             >
-              {loading ? 'Procesando...' : 'SUSCRIBIRME — 200 ★'}
+              {loading ? 'Procesando...' : 'SUSCRIBIRME — 250 ★'}
             </button>
 
             <button

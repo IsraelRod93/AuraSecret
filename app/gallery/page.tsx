@@ -418,8 +418,8 @@ function GalleryPage() {
         loading={payLoading}
         title="El destino tiene mas para ti"
         description="Mensajes ilimitados + perfiles ilimitados por 30 dias"
-        price="200 Stars (~$30 MXN)"
-        buttonText="SUSCRIBIRME — 200 ★"
+        price="250 Stars (~$87 MXN)"
+        buttonText="SUSCRIBIRME — 250 ★"
         referralLink={referralLink || undefined}
         onShare={referralLink ? handleShare : undefined}
       />

@@ -7,7 +7,7 @@ function getBotToken() {
 }
 
 export const STAR_PRICES = {
-  SUBSCRIPTION: 200,   // $30 MXN/mes — desbloquea chat + galería
+  SUBSCRIPTION: 250,   // ~$87 MXN/mes — desbloquea chat + galería
   VAULT_BASE: 200,
 } as const;
 
