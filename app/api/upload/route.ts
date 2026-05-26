@@ -18,18 +18,22 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const buffer = Buffer.from(await request.arrayBuffer());
-
-    // Los admins saltan la moderación; las creadoras pasan por Rekognition (solo imágenes)
     const isVideo = /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(filename);
+
     if (!isAdmin && !isVideo) {
+      // Images: buffer for moderation check
+      const buffer = Buffer.from(await request.arrayBuffer());
       const { allowed, reason } = await checkImageContent(buffer);
       if (!allowed) {
         return NextResponse.json({ error: reason }, { status: 422 });
       }
+      const blob = await put(filename, buffer, { access: 'public', addRandomSuffix: true });
+      return NextResponse.json(blob);
     }
 
-    const blob = await put(filename, buffer, { access: 'public', addRandomSuffix: true });
+    // Videos (and admin uploads): stream directly to Blob — no memory buffer limit
+    if (!request.body) return NextResponse.json({ error: 'No content' }, { status: 400 });
+    const blob = await put(filename, request.body, { access: 'public', addRandomSuffix: true });
     return NextResponse.json(blob);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Upload failed';

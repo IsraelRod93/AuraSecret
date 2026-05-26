@@ -546,6 +546,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
   const [items, setItems] = useState<VaultItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [priceModal, setPriceModal] = useState<{ files: File[] } | null>(null);
   const [newPrice, setNewPrice] = useState('49');
   const [selectedPhoto, setSelectedPhoto] = useState<VaultItem | null>(null);
@@ -641,6 +642,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
     if (pkgSelected.length === 0 && pkgNewFiles.length === 0) { alert('Agrega al menos un archivo al paquete'); return; }
 
     setUploading(true);
+    const totalFiles = pkgNewFiles.length;
     try {
       for (const id of pkgSelected) {
         const res = await fetch('/api/vault', {
@@ -654,7 +656,10 @@ function PhotosTab({ companionId }: { companionId: string }) {
         }
       }
 
-      for (const file of pkgNewFiles) {
+      for (let i = 0; i < pkgNewFiles.length; i++) {
+        const file = pkgNewFiles[i];
+        setUploadStatus(`Subiendo ${i + 1}/${totalFiles}: ${file.name.slice(0, 20)}${file.name.length > 20 ? '…' : ''}`);
+
         const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
         const uploadData = await uploadRes.json().catch(() => ({}));
         if (!uploadRes.ok || !uploadData.url) {
@@ -683,7 +688,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
       setPkgName(''); setPkgPrice(''); setPkgSelected([]); setPkgNewFiles([]);
       await loadItems();
     } catch (e) { alert(e instanceof Error ? e.message : 'Error al crear paquete'); }
-    finally { setUploading(false); }
+    finally { setUploading(false); setUploadStatus(''); }
   };
 
   const handleDeletePackage = async (groupName: string) => {
@@ -1045,12 +1050,42 @@ function PhotosTab({ companionId }: { companionId: string }) {
               )}
 
               <div>
-                <label className="text-xs text-muted-foreground mb-2 block">O sube fotos nuevas</label>
-                <label className="block bg-background border border-dashed border-border rounded-lg p-3 text-center cursor-pointer text-sm text-muted-foreground">
-                  <Plus size={16} className="inline mr-1" />
-                  {pkgNewFiles.length > 0 ? `${pkgNewFiles.length} archivo${pkgNewFiles.length > 1 ? 's' : ''} listo${pkgNewFiles.length > 1 ? 's' : ''}` : 'Subir fotos o videos'}
-                  <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={e => { if (e.target.files) setPkgNewFiles(Array.from(e.target.files)); }} />
+                <label className="text-xs text-muted-foreground mb-2 block">
+                  Sube fotos y videos {pkgNewFiles.length > 0 && `(${pkgNewFiles.length} seleccionado${pkgNewFiles.length > 1 ? 's' : ''})`}
                 </label>
+                <label className="block bg-background border border-dashed border-border rounded-lg p-3 text-center cursor-pointer text-sm text-muted-foreground hover:border-primary transition-colors">
+                  <Plus size={16} className="inline mr-1" />
+                  Agregar fotos o videos
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={e => { if (e.target.files) setPkgNewFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}
+                  />
+                </label>
+                {pkgNewFiles.length > 0 && (
+                  <div className="grid grid-cols-4 gap-1.5 mt-2 max-h-40 overflow-y-auto">
+                    {pkgNewFiles.map((file, i) => (
+                      <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-slate-900">
+                        {file.type.startsWith('video/') ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                          </div>
+                        ) : (
+                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setPkgNewFiles(prev => prev.filter((_, j) => j !== i))}
+                          className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/70 rounded-full flex items-center justify-center"
+                        >
+                          <X size={9} className="text-white" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="bg-background rounded-lg p-3 text-center">
@@ -1069,7 +1104,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 disabled={uploading || !pkgName || !pkgPrice || (pkgSelected.length === 0 && pkgNewFiles.length === 0)}
                 className="w-full bg-primary text-primary-foreground p-3 rounded-lg font-bold disabled:opacity-50"
               >
-                {uploading ? 'Guardando...' : 'GUARDAR Y CREAR PAQUETE'}
+                {uploading ? (uploadStatus || 'Guardando...') : 'GUARDAR Y CREAR PAQUETE'}
               </button>
             </div>
           </Modal>
