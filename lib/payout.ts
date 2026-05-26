@@ -34,22 +34,41 @@ export async function ensurePayoutSchema(sql: ReturnType<typeof getDb>) {
     CREATE INDEX IF NOT EXISTS wr_companion_status_idx ON withdrawal_requests (companion_id, status)
   `.catch(() => {});
 
+  // Columna de idempotencia para evitar doble acreditación
+  await sql`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS earnings_credited BOOLEAN DEFAULT false`.catch(() => {});
+
   tableReady = true;
 }
 
 export async function creditCreatorEarnings(
   sql: ReturnType<typeof getDb>,
   companionId: string,
-  totalStars: number
+  totalStars: number,
+  chargeId: string
 ) {
   const creatorStars = Math.round(totalStars * 0.8);
   if (creatorStars <= 0) return;
   await ensurePayoutSchema(sql);
-  await sql`
+
+  // Solo acredita si esta compra no ha sido acreditada aún (protección contra webhooks duplicados)
+  const [updated] = await sql`
     UPDATE companions
     SET earnings_stars = COALESCE(earnings_stars, 0) + ${creatorStars}
     WHERE id = ${companionId}::uuid
+    AND EXISTS (
+      SELECT 1 FROM purchases
+      WHERE stripe_payment_id = ${chargeId}
+      AND (earnings_credited = false OR earnings_credited IS NULL)
+    )
+    RETURNING id
   `;
+
+  if (updated) {
+    await sql`
+      UPDATE purchases SET earnings_credited = true
+      WHERE stripe_payment_id = ${chargeId}
+    `;
+  }
 }
 
 export async function processPayoutViaMercadoPago(params: {

@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
             }
 
             if (payload.companionId) {
-              await creditCreatorEarnings(sql, payload.companionId, payment.total_amount);
+              await creditCreatorEarnings(sql, payload.companionId, payment.total_amount, chargeId);
             }
 
             await sendMessage(chatId, "<b>Tesoro desbloqueado...</b> 🔓\n\nLo que acabas de adquirir es solo para tus ojos. Disfrútalo en tu bóveda privada.");
