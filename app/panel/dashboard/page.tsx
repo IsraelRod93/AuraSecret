@@ -64,7 +64,7 @@ const fmt = (n: number) => new Intl.NumberFormat('es-MX').format(n);
 
 export default function PanelDashboard() {
   const router = useRouter();
-  const [tab, setTab] = useState<'dashboard' | 'profile' | 'photos' | 'chats' | 'pagos'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'profile' | 'photos' | 'chats'>('dashboard');
   const [companion, setCompanion] = useState<Companion | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -93,7 +93,6 @@ export default function PanelDashboard() {
     { key: 'dashboard' as const, label: 'Inicio', icon: BarChart3 },
     { key: 'photos' as const, label: 'Fotos', icon: Camera },
     { key: 'chats' as const, label: 'Chats', icon: MessageCircle },
-    { key: 'pagos' as const, label: 'Pagos', icon: Wallet },
     { key: 'profile' as const, label: 'Perfil', icon: User },
   ];
 
@@ -131,7 +130,7 @@ export default function PanelDashboard() {
       {/* Content */}
       <div className="relative z-10 max-w-lg mx-auto px-4">
         <AnimatePresence mode="wait">
-          {tab === 'dashboard' && <DashboardTab key="dash" companionId={companion.id} />}
+          {tab === 'dashboard' && <DashboardTab key="dash" companion={companion} />}
           {tab === 'profile' && (
             <ProfileTab
               key="prof"
@@ -142,7 +141,6 @@ export default function PanelDashboard() {
           )}
           {tab === 'photos' && <PhotosTab key="photos" companionId={companion.id} />}
           {tab === 'chats' && <ChatsTab key="chats" companionId={companion.id} />}
-          {tab === 'pagos' && <PayoutTab key="pagos" />}
         </AnimatePresence>
       </div>
 
@@ -169,7 +167,7 @@ export default function PanelDashboard() {
 
 // ── Dashboard Tab ──
 
-function DashboardTab({ companionId }: { companionId: string }) {
+function DashboardTab({ companion }: { companion: Companion }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,6 +180,10 @@ function DashboardTab({ companionId }: { companionId: string }) {
   }, []);
 
   if (loading) return <LoadingSpinner />;
+
+  const profileComplete = !!(companion.tagline && companion.description && companion.age && companion.location);
+  const hasContent = (stats?.totalItems || 0) > 0;
+  const showOnboarding = !profileComplete || !hasContent;
 
   // amount en purchases = Telegram Stars pagados por el usuario
   // Companion recibe 80% de los Stars totales
@@ -197,6 +199,11 @@ function DashboardTab({ companionId }: { companionId: string }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3.5">
+      {/* Onboarding checklist (desaparece cuando todo está completo) */}
+      {showOnboarding && (
+        <OnboardingCard profileComplete={profileComplete} hasContent={hasContent} />
+      )}
+
       {/* Hero earnings card */}
       <div
         className="relative overflow-hidden"
@@ -269,7 +276,7 @@ function DashboardTab({ companionId }: { companionId: string }) {
       </div>
 
       {/* Shareable link */}
-      <ShareLinkCard companionId={companionId} />
+      <ShareLinkCard companionId={companion.id} />
 
       {/* Recent sales */}
       <div>
@@ -351,6 +358,7 @@ function ProfileTab({
   onUpdate: (c: Companion) => void;
   onLogout: () => void;
 }) {
+  const [showPagos, setShowPagos] = useState(false);
   const [form, setForm] = useState({
     name: companion.name,
     age: companion.age?.toString() || '',
@@ -415,6 +423,21 @@ function ProfileTab({
     setPhotoPreview(URL.createObjectURL(file));
   };
 
+  if (showPagos) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+        <button
+          onClick={() => setShowPagos(false)}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft size={18} />
+          <span className="text-sm">Volver al perfil</span>
+        </button>
+        <PayoutTab />
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
       {/* Photo */}
@@ -467,15 +490,21 @@ function ProfileTab({
         {saved ? '¡Guardado!' : saving ? 'Guardando...' : 'GUARDAR CAMBIOS'}
       </button>
 
-      {/* Payment info */}
-      <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-        <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-          <Star size={16} className="text-green-400" /> Información de pagos
-        </h4>
-        <p className="text-xs text-muted-foreground">
-          Tú recibes el <strong className="text-green-400">80%</strong> de cada venta en <strong className="text-green-400">Telegram Stars ★</strong>. Las Stars se acumulan en tu cuenta y las retiras cuando quieras.
-        </p>
-      </div>
+      {/* Earnings navigation */}
+      <button
+        type="button"
+        onClick={() => setShowPagos(true)}
+        className="w-full bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary/30 transition-colors text-left"
+      >
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--green-soft)" }}>
+          <Wallet size={18} className="text-green-400" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-foreground">Mis ganancias y pagos</p>
+          <p className="text-xs text-muted-foreground">Ver saldo · solicitar retiro · método de cobro</p>
+        </div>
+        <span className="text-muted-foreground text-sm">›</span>
+      </button>
 
       <button
         type="button"
@@ -1424,6 +1453,66 @@ function ShareLinkCard({ companionId }: { companionId: string }) {
           <Share2 className="w-4 h-4" />
           Compartir
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Onboarding Card ──
+
+function OnboardingCard({ profileComplete, hasContent }: { profileComplete: boolean; hasContent: boolean }) {
+  const steps = [
+    { done: profileComplete, label: 'Completa tu perfil', hint: 'Foto · Tagline · Descripción · Ciudad' },
+    { done: hasContent,      label: 'Sube tu primer contenido', hint: 'Ve a la pestaña Fotos' },
+    { done: false,           label: 'Comparte tu link con fans', hint: 'Instagram · TikTok · WhatsApp' },
+  ];
+  const doneCount = steps.filter(s => s.done).length;
+
+  return (
+    <div
+      className="rounded-[18px] p-4"
+      style={{
+        background: "linear-gradient(135deg, oklch(0.55 0.18 300 / 0.10), oklch(0.45 0.20 320 / 0.08))",
+        border: "1px solid var(--primary-soft)",
+      }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <Sparkles size={14} style={{ color: "oklch(0.85 0.10 300)" }} />
+        <h3 className="text-xs font-semibold" style={{ color: "oklch(0.85 0.10 300)" }}>
+          Empieza a ganar
+        </h3>
+        <span className="ml-auto text-[10px] text-muted-foreground">{doneCount}/3 completado</span>
+      </div>
+
+      <div className="h-1.5 bg-border/50 rounded-full mb-4 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${(doneCount / 3) * 100}%`,
+            background: "var(--primary)",
+          }}
+        />
+      </div>
+
+      <div className="space-y-2.5">
+        {steps.map((step, i) => (
+          <div key={i} className="flex items-start gap-2.5">
+            <div
+              className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
+              style={{
+                background: step.done ? "var(--green)" : "var(--border)",
+              }}
+            >
+              {step.done && <Check size={11} className="text-white" />}
+            </div>
+            <div>
+              <p className={`text-xs font-medium ${step.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                {step.label}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{step.hint}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

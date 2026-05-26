@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
       purchased: purchasedIds.includes(item.id),
       file_url: purchasedIds.includes(item.id) ? `/api/vault/${item.id}` : null,
       thumbnail_url: null,
+      preview_url: item.file_url, // raw blob URL para CSS blur — archivos ya son access:'public'
     }));
 
     return NextResponse.json({ items: enriched });
