@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Upload, Lock, CheckCircle, AlertCircle, BarChart3, Users, MessageCircle, TrendingUp, Star, Wallet, Download, RefreshCw } from 'lucide-react';
+import { Upload, Lock, CheckCircle, AlertCircle, BarChart3, Users, MessageCircle, TrendingUp, Star, Wallet, Download, RefreshCw, ImageIcon, Trash2, Play } from 'lucide-react';
 
 interface FunnelData {
   bot_start: number;
@@ -45,6 +45,17 @@ export default function AdminPage() {
   const [payoutsError, setPayoutsError] = useState('');
   const [processingPayouts, setProcessingPayouts] = useState(false);
   const [processResult, setProcessResult] = useState('');
+
+  // Content audit
+  interface ContentItem {
+    id: string; type: string; title: string | null; price: number;
+    file_url: string | null; created_at: string;
+    companion_name: string; companion_id: string;
+  }
+  const [contentItems, setContentItems] = useState<ContentItem[]>([]);
+  const [contentLoading, setContentLoading] = useState(false);
+  const [contentError, setContentError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +131,33 @@ export default function AdminPage() {
     } catch {
       setProcessResult('Error al procesar');
     } finally { setProcessingPayouts(false); }
+  };
+
+  const loadContent = async () => {
+    if (!password) { setContentError('Ingresa la contraseña primero'); return; }
+    setContentLoading(true);
+    setContentError('');
+    try {
+      const res = await fetch('/api/admin/content', { headers: { 'x-admin-password': password } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error');
+      setContentItems(data.items || []);
+    } catch (err) {
+      setContentError(err instanceof Error ? err.message : 'Error al cargar contenido');
+    } finally { setContentLoading(false); }
+  };
+
+  const deleteItem = async (itemId: string) => {
+    if (!confirm('¿Eliminar este archivo? Esta acción no se puede deshacer.')) return;
+    setDeletingId(itemId);
+    try {
+      await fetch('/api/admin/content', {
+        method: 'DELETE',
+        headers: { 'x-admin-password': password, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId }),
+      });
+      setContentItems(prev => prev.filter(i => i.id !== itemId));
+    } finally { setDeletingId(null); }
   };
 
   const downloadSpei = async () => {
@@ -369,6 +407,84 @@ export default function AdminPage() {
             <div className="text-center py-6">
               <CheckCircle className="text-green-500 mx-auto mb-2" size={24} />
               <p className="text-muted-foreground text-sm">Sin retiros pendientes</p>
+            </div>
+          )}
+        </div>
+
+        {/* Content audit */}
+        <div className="bg-card p-6 rounded-2xl border-2 border-border shadow-[0_0_30px_rgba(49,27,146,0.3)]">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="text-primary" size={20} />
+              <h3 className="text-foreground font-bold">Auditoría de Contenido</h3>
+              {contentItems.length > 0 && (
+                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                  {contentItems.length}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={loadContent}
+              disabled={contentLoading}
+              className="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-lg border border-primary/30 hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              <RefreshCw size={12} className={contentLoading ? 'animate-spin' : ''} />
+              {contentLoading ? 'Cargando...' : 'Cargar'}
+            </button>
+          </div>
+
+          {contentError && <p className="text-destructive text-sm text-center py-4">{contentError}</p>}
+
+          {!contentItems.length && !contentError && (
+            <p className="text-muted-foreground text-sm text-center py-6">
+              Ingresa la contraseña y toca Cargar para auditar el contenido
+            </p>
+          )}
+
+          {contentItems.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              {contentItems.map(item => (
+                <div key={item.id} className="bg-background border border-border rounded-xl overflow-hidden">
+                  <div className="relative aspect-square bg-slate-900">
+                    {item.type === 'video' ? (
+                      <>
+                        <video
+                          src={item.file_url || ''}
+                          preload="none"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                          <Play className="w-8 h-8 text-white fill-white opacity-80" />
+                        </div>
+                      </>
+                    ) : (
+                      <img
+                        src={item.file_url || ''}
+                        alt={item.title || ''}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    )}
+                    <button
+                      onClick={() => deleteItem(item.id)}
+                      disabled={deletingId === item.id}
+                      className="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center disabled:opacity-50 transition-colors"
+                      title="Eliminar"
+                    >
+                      {deletingId === item.id ? '…' : <Trash2 size={13} />}
+                    </button>
+                    <span className="absolute bottom-1.5 left-1.5 text-[10px] bg-black/70 text-white px-1.5 py-0.5 rounded">
+                      ★{Math.round(item.price / 100)}
+                    </span>
+                  </div>
+                  <div className="p-2">
+                    <p className="text-xs font-medium text-foreground truncate">{item.companion_name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {item.type === 'video' ? 'Video' : 'Foto'} · {new Date(item.created_at).toLocaleDateString('es-MX')}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
