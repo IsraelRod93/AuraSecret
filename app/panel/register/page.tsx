@@ -98,6 +98,8 @@ export default function PanelRegister() {
       const uploadData = await uploadRes.json();
       if (!uploadData.url) throw new Error(uploadData.error || 'Error al subir foto');
 
+      const tgInitData = (window as any).Telegram?.WebApp?.initData || null;
+
       const res = await fetch('/api/panel-auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,6 +110,7 @@ export default function PanelRegister() {
           location, personality_type: personality,
           tagline: tagline || null,
           description: description || null,
+          initData: tgInitData,
         }),
       });
       const data = await res.json();

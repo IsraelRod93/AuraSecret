@@ -163,4 +163,7 @@ export async function ensureFullSchema(sql: Sql) {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS gallery_expires_at TIMESTAMPTZ`.catch(() => {});
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ`.catch(() => {});
   await sql`ALTER TABLE conversations ADD COLUMN IF NOT EXISTS message_count INTEGER DEFAULT 0`.catch(() => {});
+  await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS telegram_id BIGINT`.catch(() => {});
+  await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS reset_otp TEXT`.catch(() => {});
+  await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS reset_otp_expires_at TIMESTAMPTZ`.catch(() => {});
 }
