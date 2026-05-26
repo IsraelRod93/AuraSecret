@@ -20,8 +20,9 @@ export async function POST(request: NextRequest) {
   try {
     const buffer = Buffer.from(await request.arrayBuffer());
 
-    // Los admins saltan la moderación; las creadoras pasan por Rekognition
-    if (!isAdmin) {
+    // Los admins saltan la moderación; las creadoras pasan por Rekognition (solo imágenes)
+    const isVideo = /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(filename);
+    if (!isAdmin && !isVideo) {
       const { allowed, reason } = await checkImageContent(buffer);
       if (!allowed) {
         return NextResponse.json({ error: reason }, { status: 422 });

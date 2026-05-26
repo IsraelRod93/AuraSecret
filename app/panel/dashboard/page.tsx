@@ -567,11 +567,12 @@ function PhotosTab({ companionId }: { companionId: string }) {
         const uploadData = await uploadRes.json();
         if (!uploadData.url) throw new Error('Error al subir');
 
+        const itemType = file.type.startsWith('video/') ? 'video' : 'photo';
         await fetch('/api/vault', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            companionId, type: 'photo',
+            companionId, type: itemType,
             title: file.name.replace(/\.[^.]+$/, ''),
             price: Number(newPrice) * 100,
             fileUrl: uploadData.url,
@@ -596,7 +597,7 @@ function PhotosTab({ companionId }: { companionId: string }) {
   };
 
   const handleDelete = async (itemId: string) => {
-    if (!confirm('¿Eliminar esta foto?')) return;
+    if (!confirm('¿Eliminar este archivo?')) return;
     await fetch('/api/vault', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -625,11 +626,12 @@ function PhotosTab({ companionId }: { companionId: string }) {
         const uploadData = await uploadRes.json();
         if (!uploadData.url) continue;
 
+        const itemType = file.type.startsWith('video/') ? 'video' : 'photo';
         await fetch('/api/vault', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            companionId, type: 'photo',
+            companionId, type: itemType,
             title: file.name.replace(/\.[^.]+$/, ''),
             price: Number(pkgPrice) * 100,
             fileUrl: uploadData.url,
@@ -684,17 +686,18 @@ function PhotosTab({ companionId }: { companionId: string }) {
         });
       }
 
-      // Upload new photos to the package
+      // Upload new photos/videos to the package
       for (const file of pkgNewFiles) {
         const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
         const uploadData = await uploadRes.json();
         if (!uploadData.url) continue;
 
+        const itemType = file.type.startsWith('video/') ? 'video' : 'photo';
         await fetch('/api/vault', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            companionId, type: 'photo',
+            companionId, type: itemType,
             title: file.name.replace(/\.[^.]+$/, ''),
             price: Number(editPkgPrice) * 100,
             fileUrl: uploadData.url,
@@ -792,9 +795,9 @@ function PhotosTab({ companionId }: { companionId: string }) {
             ) : (
               <Plus className="mx-auto mb-2 text-muted-foreground" size={28} />
             )}
-            <p className="text-sm text-muted-foreground">{uploading ? 'Subiendo...' : 'Toca para subir fotos'}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Cada foto se vende por separado</p>
-            <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleFilesSelected(e.target.files)} disabled={uploading} />
+            <p className="text-sm text-muted-foreground">{uploading ? 'Subiendo...' : 'Toca para subir fotos o videos'}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Cada archivo se vende por separado</p>
+            <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={e => handleFilesSelected(e.target.files)} disabled={uploading} />
           </label>
 
           {/* Individual grid */}
@@ -807,8 +810,19 @@ function PhotosTab({ companionId }: { companionId: string }) {
           ) : (
             <div className="grid grid-cols-3 gap-2">
               {individualItems.map(item => (
-                <button key={item.id} onClick={() => { setSelectedPhoto(item); setEditPrice(String(item.price / 100)); }} className="relative aspect-square rounded-lg overflow-hidden">
-                  <img src={item.file_url || item.thumbnail_url || ''} alt={item.title || ''} className="w-full h-full object-cover" />
+                <button key={item.id} onClick={() => { setSelectedPhoto(item); setEditPrice(String(item.price / 100)); }} className="relative aspect-square rounded-lg overflow-hidden bg-slate-900">
+                  {item.type === 'video' ? (
+                    <>
+                      <video src={item.file_url || ''} preload="none" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <img src={item.file_url || item.thumbnail_url || ''} alt={item.title || ''} className="w-full h-full object-cover" />
+                  )}
                   <div className="absolute bottom-1 left-1 bg-green-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
                     ★{item.price / 100}
                   </div>
@@ -852,7 +866,15 @@ function PhotosTab({ companionId }: { companionId: string }) {
                   </div>
                   <div className="flex gap-1.5 overflow-x-auto pb-1">
                     {pkgItems.map(item => (
-                      <img key={item.id} src={item.file_url || item.thumbnail_url || ''} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                      <div key={item.id} className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-slate-900 relative">
+                        {item.type === 'video' ? (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                            <svg className="w-6 h-6 text-white/60 fill-white/60" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                          </div>
+                        ) : (
+                          <img src={item.file_url || item.thumbnail_url || ''} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
                     ))}
                   </div>
                 </button>
@@ -868,9 +890,9 @@ function PhotosTab({ companionId }: { companionId: string }) {
       <AnimatePresence>
         {priceModal && (
           <Modal onClose={() => setPriceModal(null)}>
-            <h3 className="font-serif text-lg text-foreground mb-1">Precio por foto</h3>
+            <h3 className="font-serif text-lg text-foreground mb-1">Precio por archivo</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              {priceModal.files.length} foto{priceModal.files.length > 1 ? 's' : ''} seleccionada{priceModal.files.length > 1 ? 's' : ''}
+              {priceModal.files.length} archivo{priceModal.files.length > 1 ? 's' : ''} seleccionado{priceModal.files.length > 1 ? 's' : ''}
             </p>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-muted-foreground text-lg">★</span>
@@ -896,7 +918,11 @@ function PhotosTab({ companionId }: { companionId: string }) {
       <AnimatePresence>
         {selectedPhoto && (
           <Modal onClose={() => setSelectedPhoto(null)}>
-            <img src={selectedPhoto.file_url || selectedPhoto.thumbnail_url || ''} alt="" className="w-full aspect-square object-cover rounded-xl mb-4" />
+            {selectedPhoto.type === 'video' ? (
+              <video src={selectedPhoto.file_url || ''} controls playsInline preload="metadata" className="w-full aspect-square object-cover rounded-xl mb-4" />
+            ) : (
+              <img src={selectedPhoto.file_url || selectedPhoto.thumbnail_url || ''} alt="" className="w-full aspect-square object-cover rounded-xl mb-4" />
+            )}
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-muted-foreground">Precio (Stars)</label>
@@ -983,14 +1009,14 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 <label className="text-xs text-muted-foreground mb-2 block">O sube fotos nuevas</label>
                 <label className="block bg-background border border-dashed border-border rounded-lg p-3 text-center cursor-pointer text-sm text-muted-foreground">
                   <Plus size={16} className="inline mr-1" />
-                  {pkgNewFiles.length > 0 ? `${pkgNewFiles.length} foto${pkgNewFiles.length > 1 ? 's' : ''} lista${pkgNewFiles.length > 1 ? 's' : ''}` : 'Subir fotos'}
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={e => { if (e.target.files) setPkgNewFiles(Array.from(e.target.files)); }} />
+                  {pkgNewFiles.length > 0 ? `${pkgNewFiles.length} archivo${pkgNewFiles.length > 1 ? 's' : ''} listo${pkgNewFiles.length > 1 ? 's' : ''}` : 'Subir fotos o videos'}
+                  <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={e => { if (e.target.files) setPkgNewFiles(Array.from(e.target.files)); }} />
                 </label>
               </div>
 
               <div className="bg-background rounded-lg p-3 text-center">
                 <p className="text-xs text-muted-foreground">
-                  {pkgSelected.length + pkgNewFiles.length} foto{pkgSelected.length + pkgNewFiles.length !== 1 ? 's' : ''} en el paquete
+                  {pkgSelected.length + pkgNewFiles.length} archivo{pkgSelected.length + pkgNewFiles.length !== 1 ? 's' : ''} en el paquete
                 </p>
                 {pkgName && pkgPrice && pkgSelected.length === 0 && pkgNewFiles.length === 0 && (
                   <p className="text-[10px] text-primary mt-1 font-medium animate-pulse">
@@ -1043,8 +1069,14 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 <label className="text-xs text-muted-foreground mb-2 block">Fotos en este paquete</label>
                 <div className="grid grid-cols-3 gap-2">
                   {packages[editingPackage].map(item => (
-                    <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden">
-                      <img src={item.file_url || item.thumbnail_url || ''} alt="" className="w-full h-full object-cover" />
+                    <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden bg-slate-900">
+                      {item.type === 'video' ? (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                          <svg className="w-8 h-8 text-white/60 fill-white/60" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                      ) : (
+                        <img src={item.file_url || item.thumbnail_url || ''} alt="" className="w-full h-full object-cover" />
+                      )}
                       <button
                         onClick={async () => {
                           if (packages[editingPackage].length <= 1) {
@@ -1066,14 +1098,20 @@ function PhotosTab({ companionId }: { companionId: string }) {
                 <label className="text-xs text-muted-foreground mb-2 block">Agregar mas fotos</label>
                 <label className="block bg-background border border-dashed border-border rounded-lg p-3 text-center cursor-pointer text-sm text-muted-foreground">
                   <Plus size={16} className="inline mr-1" />
-                  {pkgNewFiles.length > 0 ? `${pkgNewFiles.length} foto${pkgNewFiles.length > 1 ? 's' : ''} seleccionada` : 'Seleccionar fotos'}
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={e => { if (e.target.files) setPkgNewFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
+                  {pkgNewFiles.length > 0 ? `${pkgNewFiles.length} archivo${pkgNewFiles.length > 1 ? 's' : ''} seleccionado` : 'Seleccionar fotos o videos'}
+                  <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={e => { if (e.target.files) setPkgNewFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
                 </label>
                 {pkgNewFiles.length > 0 && (
                   <div className="grid grid-cols-4 gap-1.5 mt-2">
                     {pkgNewFiles.map((file, i) => (
-                      <div key={i} className="relative aspect-square rounded-lg overflow-hidden">
-                        <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                      <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-slate-900">
+                        {file.type.startsWith('video/') ? (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                            <svg className="w-6 h-6 text-white/60 fill-white/60" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                          </div>
+                        ) : (
+                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                        )}
                         <button
                           onClick={() => setPkgNewFiles(prev => prev.filter((_, j) => j !== i))}
                           className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"

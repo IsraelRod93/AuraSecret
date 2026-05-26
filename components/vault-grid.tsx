@@ -1,12 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Lock, Camera, Video } from "lucide-react";
+import { Lock, Camera, Video, Play } from "lucide-react";
 import { WatermarkedImage } from "@/components/watermarked-image";
 
 interface VaultItem {
   id: string;
-  type: 'photo' | 'video_call';
+  type: 'photo' | 'video' | 'video_call';
   title: string | null;
   price: number;
   thumbnail_url: string | null;
@@ -41,7 +41,42 @@ export function VaultGrid({ items, onPurchase, loading, watermarkText }: VaultGr
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          {item.type === 'photo' ? (
+          {item.type === 'video' ? (
+            <div className="aspect-square relative bg-black">
+              {item.purchased && item.file_url ? (
+                <video
+                  src={item.file_url}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                  style={{ maxHeight: '100%' }}
+                />
+              ) : (
+                <div className="w-full h-full relative overflow-hidden flex flex-col items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
+                  <div className="relative z-10 flex flex-col items-center justify-center gap-3 p-4 text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10">
+                      <Play className="w-6 h-6 text-white fill-white" />
+                    </div>
+                    <p className="text-sm font-semibold text-white">Video privado</p>
+                    <div className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white">
+                      <Lock className="w-3 h-3" />
+                      <span className="font-semibold">★{Math.round(item.price / 100)}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onPurchase(item.id)}
+                    disabled={loading === item.id}
+                    className="absolute bottom-2 left-2 right-2 bg-primary text-primary-foreground py-2 rounded-lg text-sm font-bold disabled:opacity-50 z-10"
+                  >
+                    {loading === item.id ? '...' : 'Desbloquear'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+          ) : item.type === 'photo' ? (
             <div className="aspect-square relative">
               {item.purchased && item.file_url ? (
                 watermarkText ? (
@@ -52,30 +87,27 @@ export function VaultGrid({ items, onPurchase, loading, watermarkText }: VaultGr
                     alt={item.title || 'Foto'}
                   />
                 ) : (
-                <img
-                  src={item.file_url}
-                  alt={item.title || 'Foto'}
-                  className="w-full h-full object-cover"
-                />
+                  <img
+                    src={item.file_url}
+                    alt={item.title || 'Foto'}
+                    className="w-full h-full object-cover"
+                  />
                 )
               ) : (
                 <div className="w-full h-full bg-card relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
-                  <div className="absolute inset-0 bg-black/20" />
                   <div className="relative z-10 flex h-full flex-col items-center justify-center gap-3 p-4 text-center">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/30">
                       <Lock className="w-6 h-6 text-white" />
                     </div>
                     <p className="text-sm font-semibold text-white">Contenido bloqueado</p>
-                    <p className="text-xs text-muted-foreground">Compra para desbloquear</p>
                     <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-white">
                       <Lock className="w-4 h-4" />
-                      <span className="font-semibold">${(item.price / 100).toFixed(0)} MXN</span>
+                      <span className="font-semibold">★{Math.round(item.price / 100)}</span>
                     </div>
                   </div>
                 </div>
               )}
-
               {!item.purchased && (
                 <button
                   onClick={() => onPurchase(item.id)}
@@ -86,6 +118,7 @@ export function VaultGrid({ items, onPurchase, loading, watermarkText }: VaultGr
                 </button>
               )}
             </div>
+
           ) : (
             <div className="aspect-square relative bg-card flex flex-col items-center justify-center p-4">
               <Video className="w-8 h-8 text-primary mb-3" />
@@ -93,7 +126,7 @@ export function VaultGrid({ items, onPurchase, loading, watermarkText }: VaultGr
               {item.description && (
                 <p className="text-muted-foreground text-xs mt-1 text-center">{item.description}</p>
               )}
-              <span className="text-primary font-bold mt-2">${(item.price / 100).toFixed(0)} MXN</span>
+              <span className="text-primary font-bold mt-2">★{Math.round(item.price / 100)}</span>
               {!item.purchased && (
                 <button
                   onClick={() => onPurchase(item.id)}

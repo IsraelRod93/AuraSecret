@@ -91,6 +91,8 @@ export async function DELETE(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const companionId = request.nextUrl.searchParams.get('companionId');
   const userId = getRequestUserId(request);
+  const panelSession = getSession(request);
+  const isOwner = panelSession?.companionId === companionId;
 
   if (!companionId) {
     return NextResponse.json({ error: 'companionId required' }, { status: 400 });
@@ -105,6 +107,13 @@ export async function GET(request: NextRequest) {
       WHERE companion_id = ${companionId}
       ORDER BY created_at DESC
     `;
+
+    // Owner (creator panel) sees their own files directly
+    if (isOwner) {
+      return NextResponse.json({
+        items: items.map(item => ({ ...item, purchased: true })),
+      });
+    }
 
     let purchasedIds: string[] = [];
     if (userId) {
