@@ -77,12 +77,15 @@ export async function POST(request: NextRequest) {
             const expiresAt = new Date(base.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
 
             await sql`
-              UPDATE users SET subscription_status = 'active', subscription_expires_at = ${expiresAt}
+              UPDATE users
+              SET subscription_status = 'active',
+                  subscription_expires_at = ${expiresAt},
+                  gallery_expires_at = ${expiresAt},
+                  gallery_views = 0
               WHERE id = ${payload.userId}::uuid
             `;
 
-            const planLabel = payload.plan === 'monthly' ? '1 mes' : '1 semana';
-            await sendMessage(chatId, `<b>Bienvenido al Círculo Íntimo!</b> 🔥\n\nTienes acceso Premium por ${planLabel}. Mis amigas y yo estamos ansiosas por hablar contigo sin límites.`);
+            await sendMessage(chatId, `<b>Bienvenido al Círculo Íntimo!</b> 🔥\n\nTienes acceso Premium por 30 días. Mensajes ilimitados y perfiles ilimitados desbloqueados. Mis amigas y yo estamos ansiosas por hablar contigo.`);
 
             // Bonus: 7 extra days for whoever referred this user
             const [payer] = await sql`

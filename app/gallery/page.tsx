@@ -137,7 +137,7 @@ function GalleryPage() {
   const handlePayForMore = async () => {
     setPayLoading(true);
     try {
-      const paid = await payWithTelegram({ type: "gallery_unlock", userId: appUser?.id || undefined });
+      const paid = await payWithTelegram({ type: "subscription", userId: appUser?.id || undefined, plan: "monthly" });
       if (paid) {
         await loadCompanions();
         setShowPaywall(false);
@@ -417,9 +417,9 @@ function GalleryPage() {
         onPay={handlePayForMore}
         loading={payLoading}
         title="El destino tiene mas para ti"
-        description="Suscribete para ver perfiles ilimitados por un mes"
-        price="150 Stars"
-        buttonText="SUSCRIBIRME AHORA"
+        description="Mensajes ilimitados + perfiles ilimitados por 30 dias"
+        price="200 Stars (~$30 MXN)"
+        buttonText="SUSCRIBIRME — 200 ★"
         referralLink={referralLink || undefined}
         onShare={referralLink ? handleShare : undefined}
       />

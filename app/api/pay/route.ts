@@ -15,25 +15,13 @@ export async function POST(request: NextRequest) {
     let invoiceUrl: string;
 
     switch (type) {
-      case 'gallery_unlock': {
-        invoiceUrl = await createInvoiceLink({
-          title: 'Suscripcion de Galeria',
-          description: 'Acceso ilimitado para descubrir conexiones por 1 mes',
-          payload: `g:${userId}`,
-          prices: [{ label: 'Suscripcion mensual', amount: STAR_PRICES.GALLERY_UNLOCK }],
-        });
-        break;
-      }
-
+      case 'gallery_unlock':
       case 'subscription': {
-        const isMonthly = plan === 'monthly';
         invoiceUrl = await createInvoiceLink({
-          title: isMonthly ? 'AuraSecret Premium Mensual' : 'AuraSecret Premium Semanal',
-          description: isMonthly
-            ? 'Mensajes ilimitados por 1 mes — ahorra 37%'
-            : 'Mensajes ilimitados por 1 semana',
-          payload: `s:${userId}:${isMonthly ? 'm' : 'w'}`,
-          prices: [{ label: isMonthly ? 'Premium mensual' : 'Premium semanal', amount: isMonthly ? STAR_PRICES.SUBSCRIPTION_MONTHLY : STAR_PRICES.SUBSCRIPTION_WEEKLY }],
+          title: 'AuraSecret Premium',
+          description: 'Mensajes ilimitados + perfiles ilimitados por 30 dias (~$30 MXN)',
+          payload: `s:${userId}:m`,
+          prices: [{ label: 'Premium mensual', amount: STAR_PRICES.SUBSCRIPTION }],
         });
         break;
       }

@@ -1,21 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, MessageCircle, Heart, Infinity, Crown, Check } from "lucide-react";
+import { Sparkles, X, MessageCircle, Infinity, Crown, Images } from "lucide-react";
 
 interface SubscriptionModalProps {
   open: boolean;
   onClose: () => void;
-  onSubscribe: (plan: 'weekly' | 'monthly') => void;
+  onSubscribe: () => void;
   loading?: boolean;
   companionName?: string;
   companionPhoto?: string;
 }
 
 export function SubscriptionModal({ open, onClose, onSubscribe, loading, companionName, companionPhoto }: SubscriptionModalProps) {
-  const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly'>('monthly');
-
   return (
     <AnimatePresence>
       {open && (
@@ -62,20 +59,24 @@ export function SubscriptionModal({ open, onClose, onSubscribe, loading, compani
             <h3 className="font-serif text-2xl text-foreground mb-1">
               {companionName
                 ? `Sigue hablando con ${companionName}`
-                : 'Desbloquea mensajes ilimitados'}
+                : 'Desbloquea el acceso total'}
             </h3>
             <p className="text-muted-foreground text-sm mb-5">
-              No dejes que esta conexion se pierda
+              Un mes completo de conexiones sin límites
             </p>
 
             <div className="space-y-2 mb-5 text-left">
               <div className="flex items-center gap-3 text-foreground/80">
                 <Infinity className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm">Mensajes ilimitados con TODAS tus conexiones</span>
+                <span className="text-sm">Mensajes ilimitados con todas tus conexiones</span>
+              </div>
+              <div className="flex items-center gap-3 text-foreground/80">
+                <Images className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="text-sm">Perfiles ilimitados en la galería</span>
               </div>
               <div className="flex items-center gap-3 text-foreground/80">
                 <MessageCircle className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm">Respuestas mas profundas y personalizadas</span>
+                <span className="text-sm">Respuestas más profundas y personalizadas</span>
               </div>
               <div className="flex items-center gap-3 text-foreground/80">
                 <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
@@ -83,75 +84,34 @@ export function SubscriptionModal({ open, onClose, onSubscribe, loading, compani
               </div>
             </div>
 
-            {/* Plan selector */}
-            <div className="space-y-2 mb-5">
-              <button
-                onClick={() => setSelectedPlan('monthly')}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                  selectedPlan === 'monthly'
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border/50 bg-card/50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    selectedPlan === 'monthly' ? 'border-primary bg-primary' : 'border-muted-foreground'
-                  }`}>
-                    {selectedPlan === 'monthly' && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <div className="text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-foreground">Mensual</span>
-                      <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full font-bold">AHORRA 37%</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">30 dias de acceso total</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-primary">1,100 Stars</div>
-                  <div className="text-[10px] text-muted-foreground line-through">1,400 Stars</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setSelectedPlan('weekly')}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                  selectedPlan === 'weekly'
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border/50 bg-card/50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    selectedPlan === 'weekly' ? 'border-primary bg-primary' : 'border-muted-foreground'
-                  }`}>
-                    {selectedPlan === 'weekly' && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <div className="text-left">
-                    <span className="text-sm font-bold text-foreground">Semanal</span>
-                    <br />
-                    <span className="text-xs text-muted-foreground">7 dias de acceso</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-foreground">350 Stars</div>
-                </div>
-              </button>
+            {/* Price */}
+            <div
+              className="w-full flex items-center justify-between p-4 rounded-xl mb-5"
+              style={{ background: "oklch(0.55 0.18 300 / 0.12)", border: "2px solid var(--primary)" }}
+            >
+              <div className="text-left">
+                <p className="text-sm font-bold text-foreground">Premium mensual</p>
+                <p className="text-xs text-muted-foreground">30 días de acceso total</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-bold text-primary">200 ★</p>
+                <p className="text-[11px] text-muted-foreground">~$30 MXN</p>
+              </div>
             </div>
 
             <button
-              onClick={() => onSubscribe(selectedPlan)}
+              onClick={onSubscribe}
               disabled={loading}
               className="w-full bg-gradient-to-r from-primary to-pink-500 text-white py-4 rounded-xl font-bold text-lg transition-all hover:opacity-90 disabled:opacity-50"
             >
-              {loading ? 'Procesando...' : 'SUSCRIBIRME AHORA'}
+              {loading ? 'Procesando...' : 'SUSCRIBIRME — 200 ★'}
             </button>
 
             <button
               onClick={onClose}
               className="mt-3 text-muted-foreground text-xs hover:text-foreground transition-colors"
             >
-              Quizas despues
+              Quizás después
             </button>
           </motion.div>
         </motion.div>

@@ -152,13 +152,13 @@ export default function CompanionChatPage({
     }
   };
 
-  const handleSubscribe = async (plan: "weekly" | "monthly") => {
+  const handleSubscribe = async () => {
     setSubLoading(true);
     try {
       const paid = await payWithTelegram({
         type: "subscription",
         userId: appUser?.id || undefined,
-        plan,
+        plan: "monthly",
       });
       if (paid) {
         setIsSubscribed(true);
