@@ -5,16 +5,11 @@ export const STARS_TO_MXN = 0.15;
 // Retiro mínimo: 500 Stars (~$75 MXN)
 export const MIN_WITHDRAWAL_STARS = 500;
 
-let tableReady = false;
-
+// Ejecutar una sola vez vía /api/admin/migrate — nunca en el hot path
 export async function ensurePayoutSchema(sql: ReturnType<typeof getDb>) {
-  if (tableReady) return;
-  // Balance acumulado en la tabla companions
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS earnings_stars INTEGER DEFAULT 0`.catch(() => {});
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS mp_email TEXT`.catch(() => {});
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS clabe TEXT`.catch(() => {});
-
-  // Tabla de solicitudes de retiro
   await sql`
     CREATE TABLE IF NOT EXISTS withdrawal_requests (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -33,11 +28,7 @@ export async function ensurePayoutSchema(sql: ReturnType<typeof getDb>) {
   await sql`
     CREATE INDEX IF NOT EXISTS wr_companion_status_idx ON withdrawal_requests (companion_id, status)
   `.catch(() => {});
-
-  // Columna de idempotencia para evitar doble acreditación
   await sql`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS earnings_credited BOOLEAN DEFAULT false`.catch(() => {});
-
-  tableReady = true;
 }
 
 export async function creditCreatorEarnings(
@@ -48,7 +39,6 @@ export async function creditCreatorEarnings(
 ) {
   const creatorStars = Math.round(totalStars * 0.8);
   if (creatorStars <= 0) return;
-  await ensurePayoutSchema(sql);
 
   // Solo acredita si esta compra no ha sido acreditada aún (protección contra webhooks duplicados)
   const [updated] = await sql`
