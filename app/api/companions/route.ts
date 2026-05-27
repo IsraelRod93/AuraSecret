@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
 
       if (prefs) {
         companions = await sql`
-          SELECT c.id, c.name, c.type, c.photo_url, c.tagline, c.description
+          SELECT c.id, c.name, c.type, c.photo_url, c.tagline, c.description,
+                 c.age, c.location, c.verified
           FROM companions c
           WHERE c.status = 'active'
           AND c.id NOT IN (
@@ -66,7 +67,8 @@ export async function GET(request: NextRequest) {
 
     if (!companions && userId) {
       companions = await sql`
-        SELECT c.id, c.name, c.type, c.photo_url, c.tagline, c.description
+        SELECT c.id, c.name, c.type, c.photo_url, c.tagline, c.description,
+               c.age, c.location, c.verified
         FROM companions c
         WHERE c.status = 'active'
         AND c.id NOT IN (
@@ -82,7 +84,7 @@ export async function GET(request: NextRequest) {
 
     if (!companions) {
       companions = await sql`
-        SELECT id, name, type, photo_url, tagline, description
+        SELECT id, name, type, photo_url, tagline, description, age, location, verified
         FROM companions
         WHERE status = 'active'
         ORDER BY random()

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getSession } from '@/lib/auth';
-import { STARS_TO_MXN, MIN_WITHDRAWAL_STARS } from '@/lib/payout';
+import { STARS_TO_MXN, getMinWithdrawalStars } from '@/lib/payout';
 
 // POST: registrar datos de pago
 export async function POST(request: NextRequest) {
@@ -28,15 +28,18 @@ export async function PUT(request: NextRequest) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const { amountStars } = await request.json();
-
-  if (!amountStars || amountStars < MIN_WITHDRAWAL_STARS) {
-    return NextResponse.json({
-      error: `El mínimo de retiro es ${MIN_WITHDRAWAL_STARS} Stars (~$${(MIN_WITHDRAWAL_STARS * STARS_TO_MXN).toFixed(0)} MXN)`,
-    }, { status: 400 });
-  }
-
   const amountMxn = +(amountStars * STARS_TO_MXN).toFixed(2);
   const sql = getDb();
+
+  // Fetch companion's created_at to determine their minimum withdrawal threshold
+  const [comp] = await sql`SELECT created_at FROM companions WHERE id = ${session.companionId}::uuid LIMIT 1`;
+  const minWithdrawal = getMinWithdrawalStars(comp?.created_at ?? null);
+
+  if (!amountStars || amountStars < minWithdrawal) {
+    return NextResponse.json({
+      error: `El mínimo de retiro es ${minWithdrawal} Stars (~$${(minWithdrawal * STARS_TO_MXN).toFixed(0)} MXN)`,
+    }, { status: 400 });
+  }
 
   // CTE atómica: rate-limit + balance check + INSERT en una sola query.
   // El INSERT solo ocurre si recent=0, saldo suficiente y método de pago configurado.

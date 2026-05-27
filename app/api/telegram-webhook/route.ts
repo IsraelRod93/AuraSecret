@@ -160,6 +160,21 @@ export async function POST(request: NextRequest) {
 
             if (payload.companionId) {
               await creditCreatorEarnings(sql, payload.companionId, payment.total_amount, chargeId);
+
+              // 5% referral bonus to the companion who originally brought this user
+              const [buyer] = await sql`
+                SELECT referred_by_companion FROM users WHERE id = ${payload.userId}::uuid LIMIT 1
+              `;
+              if (buyer?.referred_by_companion && buyer.referred_by_companion !== payload.companionId) {
+                const bonus = Math.round(payment.total_amount * 0.05);
+                if (bonus > 0) {
+                  await sql`
+                    UPDATE companions
+                    SET referral_earnings_stars = COALESCE(referral_earnings_stars, 0) + ${bonus}
+                    WHERE id = ${buyer.referred_by_companion}::uuid
+                  `.catch(() => {});
+                }
+              }
             }
 
             await sendMessage(chatId, "<b>Tesoro desbloqueado...</b> 🔓\n\nLo que acabas de adquirir es solo para tus ojos. Disfrútalo en tu bóveda privada.");
@@ -216,6 +231,18 @@ export async function POST(request: NextRequest) {
 
 async function handleStart(sql: ReturnType<typeof getDb>, chatId: number, firstName: string, param: string, telegramId?: number) {
   trackEvent('bot_start', null, { chatId, param: param || null, telegramId });
+
+  // Track creator referral on ANY crea_ or fan_ start — upsert user with referred_by_companion
+  const creatorParam = param.startsWith('crea_') ? param.replace('crea_', '') : param.startsWith('fan_') ? param.replace('fan_', '') : null;
+  if (creatorParam && telegramId) {
+    sql`
+      INSERT INTO users (telegram_id, referred_by_companion, first_name, subscription_status)
+      VALUES (${telegramId}, ${creatorParam}::uuid, ${firstName}, 'free')
+      ON CONFLICT (telegram_id) DO UPDATE
+        SET referred_by_companion = COALESCE(users.referred_by_companion, EXCLUDED.referred_by_companion)
+    `.catch(() => {});
+  }
+
   if (param.startsWith('crea_')) {
     const companionId = param.replace('crea_', '');
     const [companion] = await sql`
@@ -235,6 +262,28 @@ async function handleStart(sql: ReturnType<typeof getDb>, chatId: number, firstN
           ]],
         }
       );
+      return;
+    }
+  }
+
+  if (param.startsWith('fan_')) {
+    const companionId = param.replace('fan_', '');
+    const [companion] = await sql`
+      SELECT name, photo_url, tagline FROM companions
+      WHERE id = ${companionId}::uuid AND status = 'active' LIMIT 1
+    `;
+    const vaultPreview = await sql`
+      SELECT thumbnail_url, price FROM vault_items
+      WHERE companion_id = ${companionId}::uuid
+      ORDER BY created_at DESC LIMIT 3
+    `.catch(() => []);
+
+    if (companion) {
+      const priceList = (vaultPreview as any[]).map(v => `★${Math.round(v.price / 100)}`).join('  ');
+      const caption = `<b>Contenido exclusivo de ${companion.name}</b> 🔒\n\n<i>"${companion.tagline || 'Solo para mis fans más cercanos'}"</i>\n\n${priceList ? `Fotos desde ${priceList} Stars — desbloqueables dentro de la app.` : 'Contenido privado disponible dentro de la app.'}\n\nEntra y escríbele directamente 👇`;
+      await sendPhoto(chatId, companion.photo_url, caption, {
+        inline_keyboard: [[{ text: `🔥 Ver contenido de ${companion.name}`, web_app: { url: `${WEBAPP_URL}/chat/${companionId}` } }]],
+      });
       return;
     }
   }

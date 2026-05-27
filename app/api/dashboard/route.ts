@@ -45,6 +45,16 @@ export async function GET(request: NextRequest) {
       SELECT COUNT(*)::int AS total FROM vault_items WHERE companion_id = ${companionId}::uuid
     `;
 
+    const [referralStats] = await sql`
+      SELECT
+        COALESCE(c.referral_earnings_stars, 0)::int AS referral_bonus,
+        COUNT(u.id)::int AS referral_users
+      FROM companions c
+      LEFT JOIN users u ON u.referred_by_companion = c.id
+      WHERE c.id = ${companionId}::uuid
+      GROUP BY c.id, c.referral_earnings_stars
+    `;
+
     const earningsThisWeek = await sql`
       SELECT COALESCE(SUM(amount), 0)::int AS total
       FROM purchases
@@ -115,6 +125,8 @@ export async function GET(request: NextRequest) {
         weekRevenue: earningsThisWeek[0]?.total || 0,
         monthGrowth,
         weekDaily,
+        referralBonus: referralStats?.referral_bonus || 0,
+        referralUsers: referralStats?.referral_users || 0,
       },
       recentSales,
     });

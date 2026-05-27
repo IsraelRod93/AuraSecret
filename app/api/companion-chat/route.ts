@@ -4,8 +4,9 @@ import { callGroq } from '@/lib/groq';
 import { getRequestUserId } from '@/lib/get-user-id';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { trackEvent } from '@/lib/track-event';
+import { sendMessage, BOT_USERNAME, WEBAPP_URL } from '@/lib/telegram-bot';
 
-const FREE_MESSAGE_LIMIT = 12;
+const FREE_MESSAGE_LIMIT = 5;
 
 function checkSubscribed(user: any): boolean {
   return user?.subscription_status === 'active' &&
@@ -94,20 +95,31 @@ export async function POST(request: NextRequest) {
     }
 
     const [user] = await sql`
-      SELECT subscription_status, subscription_expires_at
+      SELECT subscription_status, subscription_expires_at, telegram_id
       FROM users WHERE id = ${userId} LIMIT 1
     `;
 
     const isSubscribed = checkSubscribed(user);
 
     if (companion.type === 'human') {
-      return handleHumanMessage(sql, userId, companionId, message, isSubscribed);
+      return handleHumanMessage(sql, userId, companionId, message, isSubscribed, user?.telegram_id, companion.name);
     }
 
     const conversation = await getOrCreateConversation(sql, userId, companionId);
 
     if (!isSubscribed && conversation.message_count >= FREE_MESSAGE_LIMIT) {
       trackEvent('limit_reached', userId, { companionId, messagesUsed: conversation.message_count });
+      // Send viral push only once per conversation (first time hitting the wall)
+      if (!conversation.limit_push_sent && user?.telegram_id) {
+        const refLink = `https://t.me/${BOT_USERNAME}?start=ref_${user.telegram_id}`;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('Descubrí algo increíble 🔥')}`;
+        sendMessage(
+          user.telegram_id,
+          `<b>¿Te gustó hablar con ${companion.name}?</b> 💫\n\nComparte con <b>3 amigos</b> y desbloquea <b>7 días gratis</b> para seguir hablando con ella.\n\nTu link personal:\n<code>${refLink}</code>`,
+          { inline_keyboard: [[{ text: '📲 Compartir con amigos', url: shareUrl }, { text: '💬 Volver a la app', web_app: { url: `${WEBAPP_URL}/chat/${companionId}` } }]] }
+        ).catch(() => {});
+        sql`UPDATE conversations SET limit_push_sent = true WHERE id = ${conversation.id}`.catch(() => {});
+      }
       return NextResponse.json({
         reply: null,
         action: 'subscription_required',
@@ -158,9 +170,19 @@ export async function POST(request: NextRequest) {
     const totalMessages = updated.message_count;
     const isReturning = totalMessages > 1;
 
-    const systemContent = isReturning
-      ? `${personalityPrompt}\n\nIMPORTANTE: Ya llevas ${totalMessages} mensajes con este usuario. NUNCA te vuelvas a presentar ni digas "hola por primera vez". Continúa la conversación de forma natural como si siguieras hablando normalmente.`
-      : personalityPrompt;
+    const isLastFree = !isSubscribed && totalMessages === FREE_MESSAGE_LIMIT;
+    const isPenultimate = !isSubscribed && totalMessages === FREE_MESSAGE_LIMIT - 1;
+
+    let systemContent = personalityPrompt;
+    if (isReturning) {
+      systemContent += `\n\nIMPORTANTE: Ya llevas ${totalMessages} mensajes con este usuario. NUNCA te vuelvas a presentar. Continúa de forma natural.`;
+    }
+    if (isPenultimate) {
+      systemContent += `\n\nADVERTENCIA INTERNA: Este es el PENÚLTIMO mensaje gratuito. En tu respuesta, justo al final, insinúa sutilmente que tienes algo más que quieres contarle o mostrarle — sin revelar qué es. Deja la conversación abierta de forma intrigante, como si estuvieras a punto de decir algo importante. Sin romper personaje.`;
+    }
+    if (isLastFree) {
+      systemContent += `\n\nADVERTENCIA INTERNA: Este es el ÚLTIMO mensaje gratuito. En tu respuesta, al final, deja abierta una pregunta o secreto que NO puedes terminar de contar aquí. Hazle saber de forma natural que hay más — que lo que viene es lo mejor — pero que necesita desbloquear el chat para seguir. Una sola frase al final, en personaje.`;
+    }
 
     const groqMessages = [
       { role: 'system' as const, content: systemContent },
@@ -215,10 +237,28 @@ async function getOrCreateConversation(sql: ReturnType<typeof getDb>, userId: st
   return created;
 }
 
-async function handleHumanMessage(sql: ReturnType<typeof getDb>, userId: string, companionId: string, message: string, isSubscribed: boolean) {
+async function handleHumanMessage(
+  sql: ReturnType<typeof getDb>,
+  userId: string,
+  companionId: string,
+  message: string,
+  isSubscribed: boolean,
+  userTelegramId?: number | null,
+  companionName?: string,
+) {
   const conversation = await getOrCreateConversation(sql, userId, companionId);
 
   if (!isSubscribed && conversation.message_count >= FREE_MESSAGE_LIMIT) {
+    if (!conversation.limit_push_sent && userTelegramId) {
+      const refLink = `https://t.me/${BOT_USERNAME}?start=ref_${userTelegramId}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('Descubrí algo increíble 🔥')}`;
+      sendMessage(
+        userTelegramId,
+        `<b>¿Te gustó hablar con ${companionName || 'ella'}?</b> 💫\n\nComparte con <b>3 amigos</b> y desbloquea <b>7 días gratis</b>.\n\nTu link personal:\n<code>${refLink}</code>`,
+        { inline_keyboard: [[{ text: '📲 Compartir con amigos', url: shareUrl }, { text: '💬 Volver a la app', web_app: { url: `${WEBAPP_URL}/chat/${companionId}` } }]] }
+      ).catch(() => {});
+      sql`UPDATE conversations SET limit_push_sent = true WHERE id = ${conversation.id}`.catch(() => {});
+    }
     return NextResponse.json({
       reply: null,
       action: 'subscription_required',
@@ -252,6 +292,17 @@ async function handleHumanMessage(sql: ReturnType<typeof getDb>, userId: string,
     INSERT INTO messages (conversation_id, role, content)
     VALUES (${conversation.id}, 'user', ${message})
   `;
+
+  // Notify the human companion that a fan wrote to them
+  const [comp] = await sql`SELECT telegram_id, name FROM companions WHERE id = ${companionId}::uuid LIMIT 1`;
+  if (comp?.telegram_id) {
+    const preview = message.length > 60 ? message.slice(0, 60) + '…' : message;
+    sendMessage(
+      comp.telegram_id,
+      `💬 <b>Nuevo mensaje de un fan</b>\n\n"${preview}"\n\n<i>Responde desde el panel de AuraSecret.</i>`,
+      { inline_keyboard: [[{ text: '📱 Abrir panel', web_app: { url: `${WEBAPP_URL}/panel/dashboard` } }]] }
+    ).catch(() => {});
+  }
 
   return NextResponse.json({
     reply: null,

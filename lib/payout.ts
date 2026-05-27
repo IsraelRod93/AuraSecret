@@ -2,8 +2,19 @@ import { getDb } from '@/lib/db';
 
 // 1 Star = $0.15 MXN (tasa conservadora después de la comisión de Telegram/Fragment)
 export const STARS_TO_MXN = 0.15;
-// Retiro mínimo: 500 Stars (~$75 MXN)
+// Retiro mínimo estándar: 500 Stars (~$75 MXN)
 export const MIN_WITHDRAWAL_STARS = 500;
+// Retiro mínimo para creadoras nuevas (<30 días): 200 Stars (~$30 MXN)
+export const MIN_WITHDRAWAL_STARS_NEW = 200;
+const NEW_CREATOR_DAYS = 30;
+
+/** Returns the applicable minimum withdrawal based on when the creator joined. */
+export function getMinWithdrawalStars(createdAt: Date | string | null): number {
+  if (!createdAt) return MIN_WITHDRAWAL_STARS;
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+  return ageDays < NEW_CREATOR_DAYS ? MIN_WITHDRAWAL_STARS_NEW : MIN_WITHDRAWAL_STARS;
+}
 
 // Ejecutar una sola vez vía /api/admin/migrate — nunca en el hot path
 export async function ensurePayoutSchema(sql: ReturnType<typeof getDb>) {

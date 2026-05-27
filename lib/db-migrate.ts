@@ -166,4 +166,19 @@ export async function ensureFullSchema(sql: Sql) {
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS telegram_id BIGINT`.catch(() => {});
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS reset_otp TEXT`.catch(() => {});
   await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS reset_otp_expires_at TIMESTAMPTZ`.catch(() => {});
+  await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS verified BOOLEAN NOT NULL DEFAULT FALSE`.catch(() => {});
+  await sql`ALTER TABLE companions ADD COLUMN IF NOT EXISTS referral_earnings_stars INTEGER NOT NULL DEFAULT 0`.catch(() => {});
+  await sql`ALTER TABLE conversations ADD COLUMN IF NOT EXISTS limit_push_sent BOOLEAN NOT NULL DEFAULT FALSE`.catch(() => {});
+  await sql`CREATE INDEX IF NOT EXISTS idx_users_referred_companion ON users (referred_by_companion)`.catch(() => {});
+  await sql`ALTER TABLE vault_items ADD COLUMN IF NOT EXISTS approved BOOLEAN NOT NULL DEFAULT FALSE`.catch(() => {});
+  await sql`
+    CREATE TABLE IF NOT EXISTS user_events (
+      id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_name TEXT        NOT NULL,
+      user_id    UUID        REFERENCES users(id) ON DELETE SET NULL,
+      metadata   JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `.catch(() => {});
+  await sql`CREATE INDEX IF NOT EXISTS idx_user_events_name ON user_events (event_name)`.catch(() => {});
 }

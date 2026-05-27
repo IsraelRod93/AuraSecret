@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Sparkles, ArrowLeft, Lock, ImageIcon, Gift } from "lucide-react";
+import { Send, Sparkles, ArrowLeft, Lock, ImageIcon, Gift, Flame } from "lucide-react";
 import { CelestialBackground } from "@/components/celestial-background";
 import { SubscriptionModal } from "@/components/subscription-modal";
 import { useTelegram } from "@/components/telegram-provider";
@@ -12,9 +12,15 @@ interface Message {
   id: string;
   role: "user" | "companion";
   content: string;
+  locked?: boolean; // blur + lock overlay — shown as cliff-hanger at limit
 }
 
-const FREE_LIMIT = 12;
+interface VaultThumb {
+  thumbnail_url: string | null;
+  price: number;
+}
+
+const FREE_LIMIT = 5;
 
 export default function CompanionChatPage({
   params,
@@ -36,6 +42,7 @@ export default function CompanionChatPage({
   const [showSubscription, setShowSubscription] = useState(false);
   const [subLoading, setSubLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [vaultPreview, setVaultPreview] = useState<VaultThumb[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +54,18 @@ export default function CompanionChatPage({
   useEffect(() => {
     if (appUser?.id) loadChat();
   }, [companionId, appUser]);
+
+  useEffect(() => {
+    // Prefetch 3 vault thumbnails so the modal can show them immediately
+    fetch(`/api/vault?companionId=${companionId}&limit=3`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.items?.length) {
+          setVaultPreview(d.items.slice(0, 3).map((i: any) => ({ thumbnail_url: i.thumbnail_url, price: i.price })));
+        }
+      })
+      .catch(() => {});
+  }, [companionId]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -112,9 +131,18 @@ export default function CompanionChatPage({
       }
 
       if (data.action === "subscription_required") {
-        setShowSubscription(true);
-        setMessagesUsed(data.messagesUsed);
-        setMessages((prev) => prev.slice(0, -1));
+        setMessagesUsed(data.messagesUsed ?? FREE_LIMIT);
+        // Show a locked/blurred ghost reply to create FOMO, then open the modal
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: "locked-reply",
+            role: "companion",
+            content: "...",
+            locked: true,
+          },
+        ]);
+        setTimeout(() => setShowSubscription(true), 600);
         return;
       }
 
@@ -301,37 +329,94 @@ export default function CompanionChatPage({
           </div>
         )}
 
+        {/* Progressive warning banner */}
+        {!isSubscribed && remaining !== null && remaining <= 2 && remaining > 0 && messages.length > 0 && (
+          <div
+            className="flex justify-center animate-msg-in"
+          >
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+              style={{
+                background: remaining === 1
+                  ? "oklch(0.55 0.20 25 / 0.18)"
+                  : "oklch(0.60 0.18 60 / 0.15)",
+                border: `1px solid ${remaining === 1 ? "oklch(0.55 0.20 25 / 0.45)" : "oklch(0.60 0.18 60 / 0.35)"}`,
+                color: remaining === 1 ? "oklch(0.75 0.18 25)" : "oklch(0.80 0.14 70)",
+              }}
+            >
+              <Flame size={11} />
+              {remaining === 1 ? "Último mensaje gratis — ¿seguimos?" : `Solo ${remaining} mensajes gratis`}
+            </div>
+          </div>
+        )}
+
         {messages.map((msg) => (
           <div
             key={msg.id}
             className="flex animate-msg-in"
-            style={{
-              justifyContent:
-                msg.role === "user" ? "flex-end" : "flex-start",
-            }}
+            style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
           >
-            <div
-              style={{
-                maxWidth: "78%",
-                padding: "8px 13px",
-                borderRadius: 18,
-                borderBottomLeftRadius: msg.role === "companion" ? 4 : 18,
-                borderBottomRightRadius: msg.role === "user" ? 4 : 18,
-                fontSize: 14,
-                lineHeight: 1.4,
-                background:
-                  msg.role === "user"
-                    ? "linear-gradient(135deg, oklch(0.55 0.18 300 / 0.55), oklch(0.50 0.18 320 / 0.55))"
-                    : "oklch(0.18 0.04 290 / 0.85)",
-                border:
-                  msg.role === "user"
-                    ? "1px solid oklch(0.60 0.18 300 / 0.4)"
-                    : "1px solid var(--border)",
-                color: "var(--foreground)",
-              }}
-            >
-              {msg.content}
-            </div>
+            {msg.locked ? (
+              // Locked companion reply — blurred cliff-hanger
+              <button
+                onClick={() => setShowSubscription(true)}
+                className="cursor-pointer border-none p-0 bg-transparent text-left"
+                style={{ maxWidth: "78%" }}
+              >
+                <div
+                  className="relative overflow-hidden"
+                  style={{
+                    padding: "8px 13px",
+                    borderRadius: 18,
+                    borderBottomLeftRadius: 4,
+                    background: "oklch(0.18 0.04 290 / 0.85)",
+                    border: "1px solid var(--primary-soft)",
+                    minWidth: 180,
+                    minHeight: 38,
+                  }}
+                >
+                  <p
+                    className="text-sm leading-snug select-none"
+                    style={{ filter: "blur(5px)", color: "var(--foreground)", userSelect: "none" }}
+                    aria-hidden
+                  >
+                    Tengo algo que contarte pero solo tú puedes escucharlo...
+                  </p>
+                  <div
+                    className="absolute inset-0 flex items-center justify-center gap-1.5"
+                    style={{ backdropFilter: "blur(1px)" }}
+                  >
+                    <Lock size={14} style={{ color: "var(--primary)" }} />
+                    <span className="text-xs font-semibold" style={{ color: "var(--primary)" }}>
+                      Desbloquear respuesta
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ) : (
+              <div
+                style={{
+                  maxWidth: "78%",
+                  padding: "8px 13px",
+                  borderRadius: 18,
+                  borderBottomLeftRadius: msg.role === "companion" ? 4 : 18,
+                  borderBottomRightRadius: msg.role === "user" ? 4 : 18,
+                  fontSize: 14,
+                  lineHeight: 1.4,
+                  background:
+                    msg.role === "user"
+                      ? "linear-gradient(135deg, oklch(0.55 0.18 300 / 0.55), oklch(0.50 0.18 320 / 0.55))"
+                      : "oklch(0.18 0.04 290 / 0.85)",
+                  border:
+                    msg.role === "user"
+                      ? "1px solid oklch(0.60 0.18 300 / 0.4)"
+                      : "1px solid var(--border)",
+                  color: "var(--foreground)",
+                }}
+              >
+                {msg.content}
+              </div>
+            )}
           </div>
         ))}
 
@@ -447,6 +532,7 @@ export default function CompanionChatPage({
         loading={subLoading}
         companionName={companion?.name}
         companionPhoto={companion?.photo_url}
+        vaultPreview={vaultPreview}
       />
     </div>
   );

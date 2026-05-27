@@ -18,6 +18,7 @@ interface Companion {
   description: string | null;
   age?: number | null;
   location?: string | null;
+  verified?: boolean;
 }
 
 export default function GalleryPageWrapper() {
@@ -310,7 +311,7 @@ function GalleryPage() {
                   {current.location && (
                     <span className="chip"><MapPin size={10} /> {current.location}</span>
                   )}
-                  {current.type === "human" && (
+                  {current.verified && (
                     <span className="chip-pink"><Shield size={10} /> Verificada</span>
                   )}
                   <span className="chip-gold"><Zap size={10} /> Activa ahora</span>
